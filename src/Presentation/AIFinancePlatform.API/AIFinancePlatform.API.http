@@ -1,0 +1,6 @@
+@AIFinancePlatform.API_HostAddress = http://localhost:5294
+
+GET {{AIFinancePlatform.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

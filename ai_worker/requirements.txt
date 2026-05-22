@@ -1,0 +1,7 @@
+pika
+pytesseract
+Pillow
+requests
+opencv-python
+thefuzz
+Levenshtein
