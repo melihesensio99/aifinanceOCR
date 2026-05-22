@@ -8,6 +8,7 @@ using AIFinancePlatform.Application.CQRS.Commands.Transactions.DeleteTransaction
 using AIFinancePlatform.Application.CQRS.Queries.Transactions.GetTransactions;
 using AIFinancePlatform.Application.DTOs.Transactions;
 using AIFinancePlatform.API.Models.Transactions;
+using AIFinancePlatform.Application.Common.Models;
 
 namespace AIFinancePlatform.API.Controllers;
 
@@ -15,9 +16,9 @@ namespace AIFinancePlatform.API.Controllers;
 public class TransactionController : ApiControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<TransactionDto>>> Get()
+    public async Task<ActionResult<PaginatedList<TransactionDto>>> Get([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
-        var query = new GetTransactionsQuery(CurrentUserId);
+        var query = new GetTransactionsQuery(CurrentUserId, pageNumber, pageSize);
         var result = await Mediator.Send(query);
         return Ok(result);
     }

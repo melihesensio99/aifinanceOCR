@@ -6,6 +6,7 @@ import re
 import cv2
 import pytesseract
 from PIL import Image
+from thefuzz import fuzz
 
 # Tesseract yolunu (Windows için) ayarlayın.
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -20,20 +21,38 @@ def parse_receipt_text(text):
     print(text)
     print("----------------")
 
-    # Basit Regex ve Keyword Eşleştirme
+    # Tüm satırları al
+    lines = [line.strip() for line in text.split('\n') if line.strip()]
+
     # 1. Tarih Bulma (GG.AA.YYYY veya GG/AA/YYYY)
     date_match = re.search(r'\b(\d{2})[./-](\d{2})[./-](\d{4})\b', text)
     date_str = f"{date_match.group(3)}-{date_match.group(2)}-{date_match.group(1)}T00:00:00Z" if date_match else "2026-05-22T00:00:00Z"
 
-    # 2. Tutar Bulma (TOPLAM, TUTAR gibi kelimelerden sonra gelen sayı)
-    amount_match = re.search(r'(TOPLAM|TUTAR|KDV DAH[Iİ]L)\s*[:=]?\s*[\*]*\s*(\d+[,.]\d{2})', text, re.IGNORECASE)
+    # 2. Tutar Bulma (Fuzzy Logic ile)
     amount = 0.0
-    if amount_match:
-        amount_str = amount_match.group(2).replace(',', '.')
-        amount = float(amount_str)
+    for line in lines:
+        words = line.split()
+        is_total_line = False
+        for word in words:
+            if fuzz.ratio(word.upper(), "TOPLAM") > 80 or fuzz.ratio(word.upper(), "TUTAR") > 80:
+                is_total_line = True
+                break
+        
+        if is_total_line:
+            matches = re.findall(r'(\d+[,.]\d{2})', line)
+            if matches:
+                amount_str = matches[-1].replace(',', '.')
+                amount = float(amount_str)
+                break
+
+    # Bulunamazsa Regex Fallback
+    if amount == 0.0:
+        amount_match = re.search(r'(TOPLAM|TUTAR|KDV DAH[Iİ]L)\s*[:=]?\s*[\*]*\s*(\d+[,.]\d{2})', text, re.IGNORECASE)
+        if amount_match:
+            amount_str = amount_match.group(2).replace(',', '.')
+            amount = float(amount_str)
 
     # 3. Başlık (Mekan) Bulma (İlk satırı al)
-    lines = [line.strip() for line in text.split('\n') if line.strip()]
     title = lines[0] if lines else "Bilinmeyen Fiş"
 
     # 4. Kategori Bulma (Basit keyword eşleştirme)
@@ -54,11 +73,17 @@ def parse_receipt_text(text):
 
 def process_image(image_path):
     try:
-        # Resmi OpenCV ile oku ve gri tonlamaya çevir (OCR başarısını artırır)
+        # Resmi OpenCV ile oku ve gri tonlamaya çevir
         img = cv2.imread(image_path)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         
-        # Tesseract ile oku (Türkçe dil desteği: lang='tur')
+        # Yeniden Boyutlandırma (Scaling) yazıları netleştirir
+        gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+        
+        # DİKKAT: Tesseract LSTM motoru kendi içinde Adaptive Threshold kullanır. 
+        # Sizin yazdığınız Otsu Threshold filtresi fişin ışığına göre resmi tamamen
+        # bembeyaz (veya simsiyah) yapmış, bu yüzden metin BOMBOŞ dönmüş.
+        # Bu yüzden filtreyi kaldırıp sadece büyütülmüş resmi okutuyoruz:
         text = pytesseract.image_to_string(gray, lang='tur')
         return parse_receipt_text(text)
     except Exception as e:

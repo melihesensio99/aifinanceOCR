@@ -6,6 +6,8 @@ using AIFinancePlatform.Application.Common.Interfaces.Events;
 using AIFinancePlatform.Infrastructure.Messaging;
 using AIFinancePlatform.Application.Common.Interfaces.Services;
 using AIFinancePlatform.Infrastructure.Services;
+using AIFinancePlatform.Application.Common.Interfaces.BankIntegration;
+using AIFinancePlatform.Infrastructure.Services.BankIntegration;
 
 namespace AIFinancePlatform.Infrastructure;
 
@@ -21,6 +23,12 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IEventPublisher, RabbitMqEventPublisher>();
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
+
+        // Register Bank Integration Services
+        services.AddScoped<MockGarantiBankService>();
+        services.AddScoped<MockAkbankService>();
+        services.AddScoped<MockZiraatBankService>();
+        services.AddScoped<IBankIntegrationFactory, BankIntegrationFactory>();
 
         return services;
     }

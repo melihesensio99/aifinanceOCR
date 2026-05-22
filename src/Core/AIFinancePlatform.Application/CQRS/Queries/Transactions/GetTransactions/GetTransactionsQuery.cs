@@ -8,11 +8,14 @@ using Microsoft.EntityFrameworkCore;
 using AIFinancePlatform.Application.Common.Interfaces.Persistence;
 using AIFinancePlatform.Application.DTOs.Transactions;
 
+using AIFinancePlatform.Application.Common.Models;
+using AIFinancePlatform.Application.Common.Mappings;
+
 namespace AIFinancePlatform.Application.CQRS.Queries.Transactions.GetTransactions;
 
-public record GetTransactionsQuery(Guid UserId) : IRequest<List<TransactionDto>>;
+public record GetTransactionsQuery(Guid UserId, int PageNumber = 1, int PageSize = 10) : IRequest<PaginatedList<TransactionDto>>;
 
-public class GetTransactionsQueryHandler : IRequestHandler<GetTransactionsQuery, List<TransactionDto>>
+public class GetTransactionsQueryHandler : IRequestHandler<GetTransactionsQuery, PaginatedList<TransactionDto>>
 {
     private readonly IApplicationDbContext _context;
 
@@ -21,12 +24,10 @@ public class GetTransactionsQueryHandler : IRequestHandler<GetTransactionsQuery,
         _context = context;
     }
 
-    public async Task<List<TransactionDto>> Handle(GetTransactionsQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedList<TransactionDto>> Handle(GetTransactionsQuery request, CancellationToken cancellationToken)
     {
         return await _context.Transactions
-            .Include(t => t.Category)
             .Where(t => t.UserId == request.UserId)
-            .OrderByDescending(t => t.Date)
             .Select(t => new TransactionDto(
                 t.Id,
                 t.Title,
@@ -35,12 +36,13 @@ public class GetTransactionsQueryHandler : IRequestHandler<GetTransactionsQuery,
                 t.Date,
                 t.Description,
                 t.CategoryId,
-                t.Category.Name,
-                t.Category.Icon,
-                t.Category.ColorHex,
+                t.Category != null ? t.Category.Name : string.Empty,
+                t.Category != null ? t.Category.Icon : string.Empty,
+                t.Category != null ? t.Category.ColorHex : string.Empty,
                 t.IsAutomatic,
                 t.Source
             ))
-            .ToListAsync(cancellationToken);
+            .OrderByDescending(t => t.Date)
+            .PaginatedListAsync(request.PageNumber, request.PageSize);
     }
 }
