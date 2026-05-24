@@ -61,20 +61,21 @@ public class CreateTransactionCommandHandler : IRequestHandler<CreateTransaction
         _context.Transactions.Add(transaction);
         await _context.SaveChangesAsync(cancellationToken);
 
-        var transactionDto = new TransactionDto(
-            transaction.Id,
-            transaction.Title,
-            transaction.Amount,
-            transaction.Type.ToString(),
-            transaction.Date,
-            transaction.Description,
-            transaction.CategoryId,
-            category.Name,
-            category.Icon,
-            category.ColorHex,
-            transaction.IsAutomatic,
-            transaction.Source
-        );
+        var transactionDto = new TransactionDto
+        {
+            Id = transaction.Id,
+            Title = transaction.Title,
+            Amount = transaction.Amount,
+            Type = transaction.Type.ToString(),
+            Date = transaction.Date,
+            Description = transaction.Description,
+            CategoryId = transaction.CategoryId,
+            CategoryName = category.Name,
+            CategoryIcon = category.Icon,
+            CategoryColorHex = category.ColorHex,
+            IsAutomatic = transaction.IsAutomatic,
+            Source = transaction.Source
+        };
 
         return new CreateTransactionCommandResult(transactionDto, true, "Harcama başarıyla oluşturuldu.");
     }

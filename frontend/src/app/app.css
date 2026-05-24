@@ -1,0 +1,65 @@
+.app-header {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: var(--glass-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 16px 32px;
+}
+
+.logo-section {
+  gap: 12px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  box-shadow: 0 0 15px var(--primary-glow);
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.main-nav {
+  display: flex;
+  gap: 32px;
+}
+
+.main-nav a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  transition: all var(--transition-fast);
+  padding: 8px 12px;
+  border-radius: var(--border-radius-sm);
+}
+
+.main-nav a:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.main-nav a.active {
+  color: var(--primary-color);
+  font-weight: 600;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.app-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 32px;
+}

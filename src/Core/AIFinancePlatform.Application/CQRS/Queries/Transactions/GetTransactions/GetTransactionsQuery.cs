@@ -28,20 +28,21 @@ public class GetTransactionsQueryHandler : IRequestHandler<GetTransactionsQuery,
     {
         return await _context.Transactions
             .Where(t => t.UserId == request.UserId)
-            .Select(t => new TransactionDto(
-                t.Id,
-                t.Title,
-                t.Amount,
-                t.Type.ToString(),
-                t.Date,
-                t.Description,
-                t.CategoryId,
-                t.Category != null ? t.Category.Name : string.Empty,
-                t.Category != null ? t.Category.Icon : string.Empty,
-                t.Category != null ? t.Category.ColorHex : string.Empty,
-                t.IsAutomatic,
-                t.Source
-            ))
+            .Select(t => new TransactionDto
+            {
+                Id = t.Id,
+                Title = t.Title,
+                Amount = t.Amount,
+                Type = t.Type.ToString(),
+                Date = t.Date,
+                Description = t.Description,
+                CategoryId = t.CategoryId,
+                CategoryName = t.Category != null ? t.Category.Name : string.Empty,
+                CategoryIcon = t.Category != null ? t.Category.Icon : string.Empty,
+                CategoryColorHex = t.Category != null ? t.Category.ColorHex : string.Empty,
+                IsAutomatic = t.IsAutomatic,
+                Source = t.Source
+            })
             .OrderByDescending(t => t.Date)
             .PaginatedListAsync(request.PageNumber, request.PageSize);
     }
