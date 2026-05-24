@@ -42,4 +42,10 @@ export class TransactionService {
   syncBank(bankName: string): Observable<any> {
     return this.http.post(`${this.bankApiUrl}/sync`, { bankName });
   }
+
+  uploadReceipt(file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post('https://localhost:7133/api/receipt/upload', formData);
+  }
 }

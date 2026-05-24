@@ -13,7 +13,7 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tessera
 
 RABBITMQ_HOST = 'localhost'
 QUEUE_NAME = 'receipt_queue_v2'
-API_URL = 'http://localhost:5294/api/transaction/ai-webhook'
+API_URL = 'https://localhost:7133/api/transaction/ai-webhook'
 
 def parse_receipt_text(text):
     print("Orijinal Metin:")
@@ -84,7 +84,10 @@ def process_image(image_path):
         # Sizin yazdığınız Otsu Threshold filtresi fişin ışığına göre resmi tamamen
         # bembeyaz (veya simsiyah) yapmış, bu yüzden metin BOMBOŞ dönmüş.
         # Bu yüzden filtreyi kaldırıp sadece büyütülmüş resmi okutuyoruz:
-        text = pytesseract.image_to_string(gray, lang='tur')
+        # psm 4: Assume a single column of text of variable sizes (Fişler için idealdir)
+        # psm 6: Assume a single uniform block of text
+        custom_config = r'--oem 3 --psm 6'
+        text = pytesseract.image_to_string(gray, lang='tur', config=custom_config)
         return parse_receipt_text(text)
     except Exception as e:
         print(f"OCR Hatası: {e}")

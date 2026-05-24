@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TransactionService, TransactionDto, PaginatedList } from '../../core/services/transaction.service';
-import { AuthService } from '../../core/services/auth.service';
+import { TransactionService, TransactionDto, PaginatedList } from '../core/services/transaction.service';
+import { AuthService } from '../core/services/auth.service';
 
 @Component({
   selector: 'app-transactions',
@@ -25,6 +25,12 @@ import { AuthService } from '../../core/services/auth.service';
         </div>
         
         <div class="filter-group flex-center" style="gap: 16px;">
+          <!-- Gizli dosya seçici -->
+          <input type="file" #fileInput (change)="onFileSelected($event)" style="display: none" accept="image/*">
+          <button class="btn-primary" style="background: var(--electric-violet);" (click)="fileInput.click()" [disabled]="isUploading">
+            📸 {{ isUploading ? 'Yükleniyor...' : 'Fiş Okut' }}
+          </button>
+
           <select class="form-control" [(ngModel)]="selectedBank" style="min-width: 150px;">
             <option value="Garanti">Garanti BBVA</option>
             <option value="Akbank">Akbank</option>
@@ -174,6 +180,7 @@ export class TransactionsComponent implements OnInit {
   transactions: PaginatedList<TransactionDto> | null = null;
   isLoading = false;
   isSyncing = false;
+  isUploading = false;
   syncMessage = '';
   currentPage = 1;
   selectedBank = 'Garanti';
@@ -184,7 +191,7 @@ export class TransactionsComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.authService.isLoggedIn$.subscribe(isLoggedIn => {
+    this.authService.isLoggedIn$.subscribe((isLoggedIn: boolean) => {
       if (isLoggedIn) {
         this.loadTransactions();
       }
@@ -195,11 +202,11 @@ export class TransactionsComponent implements OnInit {
     this.isLoading = true;
     this.currentPage = page;
     this.transactionService.getTransactions(this.currentPage, 10).subscribe({
-      next: (data) => {
+      next: (data: PaginatedList<TransactionDto>) => {
         this.transactions = data;
         this.isLoading = false;
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Harcamalar yüklenemedi:', err);
         this.isLoading = false;
       }
@@ -220,15 +227,38 @@ export class TransactionsComponent implements OnInit {
       next: () => {
         this.isSyncing = false;
         this.syncMessage = `${this.selectedBank} hesap hareketleri başarıyla eşitlendi!`;
-        this.loadTransactions(1); // İlk sayfayı yeniden yükle
-        
-        setTimeout(() => this.syncMessage = '', 5000); // 5 saniye sonra mesajı sil
+        this.loadTransactions(1);
+        setTimeout(() => this.syncMessage = '', 5000);
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Banka eşitleme hatası:', err);
         this.isSyncing = false;
         this.syncMessage = 'Eşitleme sırasında bir hata oluştu.';
       }
     });
+  }
+
+  onFileSelected(event: any) {
+    const file: File = event.target.files[0];
+    if (file) {
+      this.isUploading = true;
+      this.syncMessage = '';
+      
+      this.transactionService.uploadReceipt(file).subscribe({
+        next: () => {
+          this.isUploading = false;
+          this.syncMessage = 'Fiş başarıyla yapay zeka kuyruğuna alındı! 15 sn içinde tabloya yansıyacaktır.';
+          // OCR asenkron (RabbitMQ) çalıştığı için tablo hemen yenilenmez. 
+          // Gerçekte SignalR/WebSocket ile dinlenir ama biz basitçe 10sn sonra sayfayı yeniliyoruz.
+          setTimeout(() => this.loadTransactions(1), 10000);
+          setTimeout(() => this.syncMessage = '', 10000);
+        },
+        error: (err: any) => {
+          console.error('Fiş yükleme hatası:', err);
+          this.isUploading = false;
+          this.syncMessage = 'Fiş yüklenirken bir hata oluştu.';
+        }
+      });
+    }
   }
 }

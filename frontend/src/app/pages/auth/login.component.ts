@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../core/services/auth.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -82,7 +82,7 @@ export class LoginComponent {
       next: () => {
         this.router.navigate(['/']); // Dashboard'a yönlendir
       },
-      error: (err) => {
+      error: (err: any) => {
         this.isLoading = false;
         this.errorMessage = 'Giriş başarısız. Lütfen bilgilerinizi kontrol edin.';
         console.error(err);
