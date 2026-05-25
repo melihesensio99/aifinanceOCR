@@ -2,11 +2,9 @@ import pika
 import json
 import time
 import requests
-import re
 import cv2
 import pytesseract
 from PIL import Image
-from thefuzz import fuzz
 
 # Tesseract yolunu (Windows için) ayarlayın.
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -14,88 +12,86 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tessera
 RABBITMQ_HOST = 'localhost'
 QUEUE_NAME = 'receipt_queue_v2'
 API_URL = 'https://localhost:7133/api/transaction/ai-webhook'
+MISTRAL_API_KEY = 'ETf07ci39I6KV5o2sIsXNUl9a3xoTqCj'
 
 def parse_receipt_text(text):
-    print("Orijinal Metin:")
+    print("Orijinal Metin (Mistral'e Gönderiliyor):")
     print("----------------")
     print(text)
     print("----------------")
 
-    # Tüm satırları al
-    lines = [line.strip() for line in text.split('\n') if line.strip()]
+    prompt = f"""
+    Sen bir finans asistanısın. Aşağıdaki OCR metni bir market veya restoran fişine ait. Metin hatalı (Örn: '0' yerine 'O', virgül yerine nokta, '*9,90' gibi karakterler) olabilir.
+    GÖREVİN: Metni analiz et, GERÇEK ürün isimlerini ve GERÇEK fiyatlarını bul. 
+    DİKKAT: ASLA uydurma fiyat (Örn: 90.0, 50.0) yazma! Fiyatlar metnin içinde '*9,90', '15,90', 'x10 50' gibi formatlarda gizlidir. Onları bul ve ondalıklı sayıya (Örn: 9.90, 15.90) çevir.
 
-    # 1. Tarih Bulma (GG.AA.YYYY veya GG/AA/YYYY)
-    date_match = re.search(r'\b(\d{2})[./-](\d{2})[./-](\d{4})\b', text)
-    date_str = f"{date_match.group(3)}-{date_match.group(2)}-{date_match.group(1)}T00:00:00Z" if date_match else "2026-05-22T00:00:00Z"
+    Şu formata tam olarak uyan BİR JSON döndür (başka hiçbir metin veya markdown ekleme):
+    {{
+        "title": "Fiş Başlığı veya Market Adı",
+        "date": "YYYY-MM-DDT00:00:00Z",
+        "amount": 82.55,
+        "items": [
+            {{"name": "BİRŞAH 500G MEY.YOĞ.", "price": 9.90}},
+            {{"name": "METİNDEKİ DİĞER ÜRÜN", "price": 0.00}}
+        ],
+        "categoryId": "11111111-1111-1111-1111-111111111111"
+    }}
+    Notlar:
+    - categoryId: Taksi, ulaşım ise "22222222-2222-2222-2222-222222222222", diğer her şey için "11111111-1111-1111-1111-111111111111" yap.
+    - Tarih bulamazsan "2026-05-22T00:00:00Z" kullan.
+    - Fiyatları sadece ondalıklı sayı (float) olarak ver.
 
-    # 2. Tutar Bulma (Fuzzy Logic ile)
-    amount = 0.0
-    for line in lines:
-        words = line.split()
-        is_total_line = False
-        for word in words:
-            if fuzz.ratio(word.upper(), "TOPLAM") > 80 or fuzz.ratio(word.upper(), "TUTAR") > 80:
-                is_total_line = True
-                break
-        
-        if is_total_line:
-            matches = re.findall(r'(\d+[,.]\d{2})', line)
-            if matches:
-                amount_str = matches[-1].replace(',', '.')
-                amount = float(amount_str)
-                break
+    Fiş Metni:
+    {text}
+    """
 
-    # Bulunamazsa Regex Fallback: En büyük parasal değeri bul
-    if amount == 0.0:
-        matches = re.findall(r'(\d+[,.]\d{2})', text)
-        if matches:
-            amounts = []
-            for m in matches:
-                try:
-                    amounts.append(float(m.replace(',', '.')))
-                except:
-                    pass
-            if amounts:
-                amount = max(amounts)
-
-    # 3. Başlık (Mekan) Bulma (İlk satırı al)
-    title = lines[0] if lines else "Bilinmeyen Fiş"
-
-    # 4. Ürün/Satır Öğesi Çıkarma (Line Items)
-    items = []
-    for line in lines:
-        if any(w in line.upper() for w in ["TOPLAM", "TUTAR", "KDV", "KART", "NAKİT", "PARA", "TOP", "SAAT"]):
-            continue
-        # Fiş üzerindeki ürün satırlarını yakala (Örn: BİRŞAH 500G %08 *9,90 veya x9 90)
-        match = re.search(r'^(.+?)\s+[\*xX%]?\s*(\d+)[,.\s](\d{2})\s*$', line.strip())
-        if match:
-            name = match.group(1).strip()
-            # Sondaki KDV vb çöp karakterleri temizle (Örn: %08, X08)
-            name = re.sub(r'\s+[xX0-9%O]+$', '', name).strip()
-            # Eğer isim çok kısaysa atla
-            if len(name) < 3: continue
-            price = f'{match.group(2)},{match.group(3)}'
-            items.append(f'• {name} - {price} TL')
-
-    description = "Otomatik OCR Analizi"
-    if items:
-        description += "\n\nAlınan Ürünler:\n" + "\n".join(items)
-
-    # 5. Kategori Bulma (Basit keyword eşleştirme)
-    # 22222222-2222-2222-2222-222222222222 = Ulaşım, 11111111-1111-1111-1111-111111111111 = Yemek
-    text_upper = text.upper()
-    category_id = "11111111-1111-1111-1111-111111111111" # Default Food
-    if any(keyword in text_upper for keyword in ["TAKSİ", "PETROL", "BİLET", "OTOBÜS", "MARMARAY"]):
-        category_id = "22222222-2222-2222-2222-222222222222" # Transport
-
-    return {
-        "title": title,
-        "amount": amount,
-        "type": "Expense",
-        "date": date_str,
-        "description": description,
-        "categoryId": category_id
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': f'Bearer {MISTRAL_API_KEY}'
     }
+
+    data = {
+        'model': 'open-mistral-nemo',
+        'response_format': {'type': 'json_object'},
+        'messages': [
+            {'role': 'user', 'content': prompt}
+        ]
+    }
+
+    try:
+        response = requests.post('https://api.mistral.ai/v1/chat/completions', headers=headers, json=data)
+        response_json = response.json()
+        
+        if 'choices' not in response_json:
+            print(f"Mistral Beklenmeyen Yanıt: {response_json}")
+            return None
+            
+        content = response_json['choices'][0]['message']['content']
+        
+        # Markdown kod bloklarını (```json ... ```) temizle
+        content = content.replace('```json', '').replace('```', '').strip()
+        parsed = json.loads(content)
+        
+        # Öğeleri açıklamaya dönüştür
+        description = "Mistral AI Analizi\n\nAlınan Ürünler:\n"
+        items = parsed.get("items", [])
+        for item in items:
+            name = item.get("name", "Bilinmeyen Ürün")
+            price = item.get("price", 0.0)
+            description += f"• {name} - {price} TL\n"
+        
+        return {
+            "title": parsed.get("title", "Bilinmeyen Fiş"),
+            "amount": parsed.get("amount", 0.0),
+            "type": "Expense",
+            "date": parsed.get("date", "2026-05-22T00:00:00Z"),
+            "description": description.strip(),
+            "categoryId": parsed.get("categoryId", "11111111-1111-1111-1111-111111111111")
+        }
+    except Exception as e:
+        print(f"Mistral AI Hatası: {e}")
+        return None
 
 def process_image(image_path):
     try:
@@ -146,6 +142,31 @@ def callback(ch, method, properties, body):
             response = requests.post(API_URL, json=parsed_data, headers=headers, verify=False)
             if response.status_code == 200 or response.status_code == 202:
                 print("Harcama C# API'ye başarıyla kaydedildi!")
+                res_data = response.json()
+                transaction_id = res_data.get('transaction', {}).get('id')
+                
+                # Eğer kategori Market/Gıda ise (1111...111), Scraping Kuyruğuna at!
+                if transaction_id and parsed_data.get("categoryId") == "11111111-1111-1111-1111-111111111111":
+                    items_only = [line.split('-')[0].replace('•', '').strip() for line in parsed_data["description"].split('\n') if line.startswith('•')]
+                    
+                    scraping_msg = {
+                        "transactionId": transaction_id,
+                        "items": items_only
+                    }
+                    
+                    # Aynı connection üzerinden ikinci kuyruğa fırlat
+                    ch.queue_declare(queue='price_scraping_queue', durable=True)
+                    ch.basic_publish(
+                        exchange='',
+                        routing_key='price_scraping_queue',
+                        body=json.dumps(scraping_msg),
+                        properties=pika.BasicProperties(
+                            delivery_mode=2,  # kalıcı mesaj
+                        )
+                    )
+                    print(f" Scraping kuyruğuna {len(items_only)} ürün gönderildi!")
+                else:
+                    print(" Market/Gıda dışı kategori, fiyat taraması atlandı.")
             else:
                 print(f"C# API Hatası: {response.status_code} - {response.text}")
         except Exception as e:
