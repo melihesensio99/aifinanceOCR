@@ -25,31 +25,37 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
     {
         var query = _context.Transactions
             .Include(t => t.Category)
-            .Where(t => t.UserId == request.UserId && t.Type == TransactionType.Expense);
+            .Where(t => t.UserId == request.UserId);
 
         var now = DateTime.UtcNow;
+        var startDate = DateTime.MinValue;
+        var endDate = now;
+
         if (request.Period == TimePeriod.Weekly)
         {
-            var startOfWeek = now.AddDays(-7);
-            query = query.Where(t => t.Date >= startOfWeek);
+            startDate = now.AddDays(-7);
+            query = query.Where(t => t.Date >= startDate);
         }
         else if (request.Period == TimePeriod.Monthly)
         {
-            var startOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-            query = query.Where(t => t.Date >= startOfMonth);
+            startDate = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            query = query.Where(t => t.Date >= startDate);
         }
         else if (request.Period == TimePeriod.Yearly)
         {
-            var startOfYear = new DateTime(now.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            query = query.Where(t => t.Date >= startOfYear);
+            startDate = new DateTime(now.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            query = query.Where(t => t.Date >= startDate);
         }
 
         var transactions = await query.ToListAsync(cancellationToken);
 
-        var totalExpense = transactions.Sum(t => t.Amount);
+        var totalExpense = transactions.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);
+        var totalIncome = transactions.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount);
+        var netBalance = totalIncome - totalExpense;
         var totalCount = transactions.Count;
 
-        var categoryBreakdown = transactions
+        var categorySummaries = transactions
+            .Where(t => t.Type == TransactionType.Expense)
             .GroupBy(t => t.CategoryId)
             .Select(g =>
             {
@@ -59,6 +65,7 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
                 {
                     CategoryId = g.Key,
                     CategoryName = category?.Name ?? "Unknown",
+                    CategoryIcon = category?.Icon ?? "📌",
                     CategoryColorHex = category?.ColorHex ?? "#808080",
                     TotalAmount = amount,
                     Percentage = totalExpense > 0 ? (amount / totalExpense) * 100 : 0
@@ -70,8 +77,12 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
         return new DashboardSummaryDto
         {
             TotalExpense = totalExpense,
-            TotalTransactionCount = totalCount,
-            CategoryBreakdown = categoryBreakdown
+            TotalIncome = totalIncome,
+            NetBalance = netBalance,
+            TransactionCount = totalCount,
+            StartDate = startDate,
+            EndDate = endDate,
+            CategorySummaries = categorySummaries
         };
     }
 }
