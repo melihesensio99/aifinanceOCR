@@ -75,7 +75,7 @@ def parse_receipt_text(text):
             # Eğer isim çok kısaysa atla
             if len(name) < 3: continue
             price = f'{match.group(2)},{match.group(3)}'
-            items.append(f'• {name} - {price} ₺')
+            items.append(f'• {name} - {price} TL')
 
     description = "Otomatik OCR Analizi"
     if items:
