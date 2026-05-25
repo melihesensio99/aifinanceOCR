@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TransactionService, TransactionDto, PaginatedList } from '../core/services/transaction.service';
@@ -269,7 +269,7 @@ import { AuthService } from '../core/services/auth.service';
     }
   `]
 })
-export class TransactionsComponent implements OnInit {
+export class TransactionsComponent implements OnInit, OnDestroy {
   transactions: PaginatedList<TransactionDto> | null = null;
   isLoading = false;
   isSyncing = false;
@@ -290,6 +290,12 @@ export class TransactionsComponent implements OnInit {
         this.loadTransactions();
       }
     });
+  }
+
+  ngOnDestroy() {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+    }
   }
 
   loadTransactions(page: number = 1, showLoading: boolean = true) {
@@ -335,23 +341,25 @@ export class TransactionsComponent implements OnInit {
   onFileSelected(event: any) {
     const file: File = event.target.files[0];
     if (file) {
+      if (this.pollingInterval) {
+        clearInterval(this.pollingInterval);
+      }
       this.isUploading = true;
       this.syncMessage = '';
       
       this.transactionService.uploadReceipt(file).subscribe({
         next: () => {
           this.isUploading = false;
-          this.syncMessage = 'Fiş başarıyla yapay zeka kuyruğuna alındı! Analiz ediliyor...';
+          this.syncMessage = 'Fiş başarıyla yapay zeka kuyruğuna alındı! Fiyat taraması yapılıyor...';
           
-          // Arka planda tabloyu çaktırmadan her 3 saniyede bir güncelle (maks 6 kere)
+          // Arka planda tabloyu çaktırmadan her 3 saniyede bir güncelle (maks 15 kere = 45 saniye)
           let attempts = 0;
           this.pollingInterval = setInterval(() => {
             this.loadTransactions(1, false); // Loading ekranı göstermeden yenile!
             attempts++;
-            if (attempts >= 6) {
+            if (attempts >= 15) {
               clearInterval(this.pollingInterval);
-              this.syncMessage = 'Fiş analizi tamamlandı ve tablo güncellendi.';
-              setTimeout(() => this.syncMessage = '', 4000);
+              this.syncMessage = ''; // Sadece sessizce kaybolsun
             }
           }, 3000);
         },
