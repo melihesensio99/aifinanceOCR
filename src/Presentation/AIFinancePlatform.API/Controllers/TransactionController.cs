@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AIFinancePlatform.Application.CQRS.Commands.Transactions.CreateTransaction;
 using AIFinancePlatform.Application.CQRS.Commands.Transactions.DeleteTransaction;
+using AIFinancePlatform.Application.CQRS.Commands.Transactions.AppendTransactionDescription;
 using AIFinancePlatform.Application.CQRS.Queries.Transactions.GetTransactions;
 using AIFinancePlatform.Application.DTOs.Transactions;
 using AIFinancePlatform.API.Models.Transactions;
@@ -62,6 +63,22 @@ public class TransactionController : ApiControllerBase
         var result = await Mediator.Send(command);
         var response = new CreateTransactionResponse(result.Transaction, result.Message);
         return Ok(response);
+    }
+
+    [AllowAnonymous]
+    [HttpPut("ai-webhook/{id}/append-description")]
+    public async Task<ActionResult> AppendDescriptionFromAi(Guid id, [FromBody] AppendDescriptionRequest request, [FromHeader(Name = "x-ai-api-key")] string apiKey)
+    {
+        if (apiKey != "secret_ai_key_123")
+        {
+            return Unauthorized(new { message = "Geçersiz AI API Key." });
+        }
+
+        var command = new AppendTransactionDescriptionCommand(id, request.TextToAppend);
+        var result = await Mediator.Send(command);
+        
+        if (!result) return NotFound();
+        return Ok();
     }
 
     [HttpDelete("{id}")]
