@@ -352,12 +352,12 @@ export class TransactionsComponent implements OnInit, OnDestroy {
           this.isUploading = false;
           this.syncMessage = 'Fiş başarıyla yapay zeka kuyruğuna alındı! Fiyat taraması yapılıyor...';
           
-          // Arka planda tabloyu çaktırmadan her 3 saniyede bir güncelle (maks 15 kere = 45 saniye)
+          // Arka planda tabloyu çaktırmadan her 3 saniyede bir güncelle (maks 30 kere = 90 saniye)
           let attempts = 0;
           this.pollingInterval = setInterval(() => {
             this.loadTransactions(1, false); // Loading ekranı göstermeden yenile!
             attempts++;
-            if (attempts >= 15) {
+            if (attempts >= 30) {
               clearInterval(this.pollingInterval);
               this.syncMessage = ''; // Sadece sessizce kaybolsun
             }
