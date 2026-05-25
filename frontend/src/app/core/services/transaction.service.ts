@@ -15,6 +15,7 @@ export interface TransactionDto {
   categoryColorHex: string;
   isAutomatic: boolean;
   source: string;
+  expanded?: boolean;
 }
 
 export interface PaginatedList<T> {
@@ -47,5 +48,9 @@ export class TransactionService {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post('https://localhost:7133/api/receipt/upload', formData);
+  }
+
+  deleteTransaction(id: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${id}`);
   }
 }

@@ -42,8 +42,16 @@ import { AuthService } from '../core/services/auth.service';
         </div>
       </div>
 
-      <div *ngIf="syncMessage" class="success-msg mb-4">
-        {{ syncMessage }}
+      <!-- Toast Notification -->
+      <div class="glass-toast" [class.show]="syncMessage">
+        <div class="flex-center" style="gap: 16px;">
+          <div class="spinner" *ngIf="isUploading || syncMessage.includes('kuyruğuna') || isSyncing"></div>
+          <div class="icon-success" *ngIf="!isUploading && !isSyncing && !syncMessage.includes('kuyruğuna')">✓</div>
+          <div>
+            <h4 style="margin:0; font-size: 1.05rem; font-weight: 500;">Sistem Bilgisi</h4>
+            <p style="margin: 4px 0 0 0; font-size: 0.9rem; color: rgba(255,255,255,0.8);">{{ syncMessage }}</p>
+          </div>
+        </div>
       </div>
 
       <div class="glass-card" style="padding: 0; overflow: hidden;">
@@ -55,6 +63,7 @@ import { AuthService } from '../core/services/auth.service';
               <th>Açıklama</th>
               <th>Kaynak</th>
               <th style="text-align: right;">Tutar</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -62,13 +71,14 @@ import { AuthService } from '../core/services/auth.service';
               <td colspan="5" class="text-center" style="padding: 32px;">Yükleniyor...</td>
             </tr>
             <tr *ngIf="!isLoading && (!transactions || transactions.items.length === 0)">
-              <td colspan="5" class="text-center" style="padding: 32px;">Henüz hiç harcamanız yok.</td>
+              <td colspan="6" class="text-center" style="padding: 32px;">Henüz hiç harcamanız yok.</td>
             </tr>
-            <tr *ngFor="let t of transactions?.items">
+            <ng-container *ngFor="let t of transactions?.items">
+            <tr (click)="t.expanded = !t.expanded" style="cursor: pointer;" [class.row-expanded]="t.expanded">
               <td>
                 <div class="flex-center" style="justify-content: flex-start; gap: 12px;">
                   <div class="cat-icon-sm" [style.backgroundColor]="t.categoryColorHex + '20'">
-                    <span [style.color]="t.categoryColorHex">{{ t.categoryIcon || '📌' }}</span>
+                    <span class="material-icons" style="font-size: 1.2rem;" [style.color]="t.categoryColorHex">{{ t.categoryIcon || 'category' }}</span>
                   </div>
                   <div>
                     <div style="font-weight: 500;">{{ t.title }}</div>
@@ -77,7 +87,11 @@ import { AuthService } from '../core/services/auth.service';
                 </div>
               </td>
               <td class="text-secondary">{{ t.date | date:'dd MMM yyyy, HH:mm' }}</td>
-              <td class="text-secondary">{{ t.description }}</td>
+              <td class="text-secondary">
+                <div style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  {{ t.description.split('\n')[0] }}
+                </div>
+              </td>
               <td>
                 <span class="badge-source" [class.badge-auto]="t.isAutomatic">{{ t.source }}</span>
               </td>
@@ -85,7 +99,22 @@ import { AuthService } from '../core/services/auth.service';
                   [style.color]="t.type === 'Income' ? 'var(--accent-color)' : 'var(--text-primary)'">
                 {{ t.type === 'Income' ? '+' : '-' }}₺{{ t.amount | number:'1.2-2' }}
               </td>
+              <td style="text-align: right; width: 50px;">
+                <button class="btn-delete" (click)="deleteTransaction(t.id); $event.stopPropagation()" title="Sil">
+                  🗑️
+                </button>
+              </td>
             </tr>
+            <!-- Expanded Row Details -->
+            <tr *ngIf="t.expanded" class="expanded-row-content">
+              <td colspan="6" style="padding: 0;">
+                <div class="expanded-details">
+                  <h4 class="text-secondary mb-2" style="font-size: 0.9rem; text-transform: uppercase;">İşlem Detayları</h4>
+                  <div style="white-space: pre-wrap; font-family: monospace; font-size: 0.95rem; line-height: 1.6; color: var(--text-primary);">{{ t.description }}</div>
+                </div>
+              </td>
+            </tr>
+            </ng-container>
           </tbody>
         </table>
 
@@ -117,12 +146,47 @@ import { AuthService } from '../core/services/auth.service';
     .mb-4 { margin-bottom: 24px; }
     .text-center { text-align: center; }
     
-    .success-msg {
-      color: var(--accent-color);
-      background: rgba(16, 185, 129, 0.1);
-      padding: 16px;
-      border-radius: 8px;
-      border: 1px solid rgba(16, 185, 129, 0.3);
+    .glass-toast {
+      position: fixed;
+      top: -100px;
+      right: 32px;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      padding: 16px 24px;
+      border-radius: 12px;
+      z-index: 9999;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .glass-toast.show {
+      top: 32px;
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-radius: 50%;
+      border-top-color: var(--accent-color);
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .icon-success {
+      width: 28px;
+      height: 28px;
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
     }
     
     .transaction-table {
@@ -144,6 +208,21 @@ import { AuthService } from '../core/services/auth.service';
     }
     .transaction-table tr:hover td {
       background: rgba(255,255,255,0.02);
+    }
+    .row-expanded td {
+      background: rgba(255,255,255,0.03) !important;
+      border-bottom: none !important;
+    }
+    .expanded-row-content td {
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      background: rgba(0,0,0,0.15);
+    }
+    .expanded-details {
+      padding: 20px 24px;
+      margin: 8px 24px 24px 24px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 8px;
+      border-left: 3px solid var(--accent-color);
     }
     
     .cat-icon-sm {
@@ -174,6 +253,20 @@ import { AuthService } from '../core/services/auth.service';
       background: rgba(0,0,0,0.1);
       border-top: 1px solid rgba(255,255,255,0.05);
     }
+    .btn-delete {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 6px;
+      border-radius: 6px;
+      transition: background 0.2s;
+      opacity: 0.6;
+    }
+    .btn-delete:hover {
+      background: rgba(239, 68, 68, 0.2);
+      opacity: 1;
+    }
   `]
 })
 export class TransactionsComponent implements OnInit {
@@ -184,6 +277,7 @@ export class TransactionsComponent implements OnInit {
   syncMessage = '';
   currentPage = 1;
   selectedBank = 'Garanti';
+  pollingInterval: any;
 
   constructor(
     public authService: AuthService,
@@ -198,17 +292,17 @@ export class TransactionsComponent implements OnInit {
     });
   }
 
-  loadTransactions(page: number = 1) {
-    this.isLoading = true;
+  loadTransactions(page: number = 1, showLoading: boolean = true) {
+    if (showLoading) this.isLoading = true;
     this.currentPage = page;
     this.transactionService.getTransactions(this.currentPage, 10).subscribe({
       next: (data: PaginatedList<TransactionDto>) => {
         this.transactions = data;
-        this.isLoading = false;
+        if (showLoading) this.isLoading = false;
       },
       error: (err: any) => {
         console.error('Harcamalar yüklenemedi:', err);
-        this.isLoading = false;
+        if (showLoading) this.isLoading = false;
       }
     });
   }
@@ -247,16 +341,40 @@ export class TransactionsComponent implements OnInit {
       this.transactionService.uploadReceipt(file).subscribe({
         next: () => {
           this.isUploading = false;
-          this.syncMessage = 'Fiş başarıyla yapay zeka kuyruğuna alındı! 15 sn içinde tabloya yansıyacaktır.';
-          // OCR asenkron (RabbitMQ) çalıştığı için tablo hemen yenilenmez. 
-          // Gerçekte SignalR/WebSocket ile dinlenir ama biz basitçe 10sn sonra sayfayı yeniliyoruz.
-          setTimeout(() => this.loadTransactions(1), 10000);
-          setTimeout(() => this.syncMessage = '', 10000);
+          this.syncMessage = 'Fiş başarıyla yapay zeka kuyruğuna alındı! Analiz ediliyor...';
+          
+          // Arka planda tabloyu çaktırmadan her 3 saniyede bir güncelle (maks 6 kere)
+          let attempts = 0;
+          this.pollingInterval = setInterval(() => {
+            this.loadTransactions(1, false); // Loading ekranı göstermeden yenile!
+            attempts++;
+            if (attempts >= 6) {
+              clearInterval(this.pollingInterval);
+              this.syncMessage = 'Fiş analizi tamamlandı ve tablo güncellendi.';
+              setTimeout(() => this.syncMessage = '', 4000);
+            }
+          }, 3000);
         },
         error: (err: any) => {
           console.error('Fiş yükleme hatası:', err);
           this.isUploading = false;
           this.syncMessage = 'Fiş yüklenirken bir hata oluştu.';
+        }
+      });
+    }
+  }
+
+  deleteTransaction(id: string) {
+    if (confirm('Bu işlemi silmek istediğinize emin misiniz?')) {
+      this.transactionService.deleteTransaction(id).subscribe({
+        next: () => {
+          this.syncMessage = 'İşlem başarıyla silindi.';
+          this.loadTransactions(this.currentPage);
+          setTimeout(() => this.syncMessage = '', 3000);
+        },
+        error: (err: any) => {
+          console.error('Silme hatası:', err);
+          this.syncMessage = 'Silme işlemi sırasında bir hata oluştu.';
         }
       });
     }
