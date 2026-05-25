@@ -47,7 +47,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Title).IsRequired().HasMaxLength(150);
             entity.Property(e => e.Amount).HasPrecision(18, 2);
-            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.Description).HasMaxLength(4000);
             entity.Property(e => e.Source).HasMaxLength(50);
 
             entity.HasOne(t => t.User)
