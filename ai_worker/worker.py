@@ -45,17 +45,43 @@ def parse_receipt_text(text):
                 amount = float(amount_str)
                 break
 
-    # Bulunamazsa Regex Fallback
+    # Bulunamazsa Regex Fallback: En büyük parasal değeri bul
     if amount == 0.0:
-        amount_match = re.search(r'(TOPLAM|TUTAR|KDV DAH[Iİ]L)\s*[:=]?\s*[\*]*\s*(\d+[,.]\d{2})', text, re.IGNORECASE)
-        if amount_match:
-            amount_str = amount_match.group(2).replace(',', '.')
-            amount = float(amount_str)
+        matches = re.findall(r'(\d+[,.]\d{2})', text)
+        if matches:
+            amounts = []
+            for m in matches:
+                try:
+                    amounts.append(float(m.replace(',', '.')))
+                except:
+                    pass
+            if amounts:
+                amount = max(amounts)
 
     # 3. Başlık (Mekan) Bulma (İlk satırı al)
     title = lines[0] if lines else "Bilinmeyen Fiş"
 
-    # 4. Kategori Bulma (Basit keyword eşleştirme)
+    # 4. Ürün/Satır Öğesi Çıkarma (Line Items)
+    items = []
+    for line in lines:
+        if any(w in line.upper() for w in ["TOPLAM", "TUTAR", "KDV", "KART", "NAKİT", "PARA", "TOP", "SAAT"]):
+            continue
+        # Fiş üzerindeki ürün satırlarını yakala (Örn: BİRŞAH 500G %08 *9,90 veya x9 90)
+        match = re.search(r'^(.+?)\s+[\*xX%]?\s*(\d+)[,.\s](\d{2})\s*$', line.strip())
+        if match:
+            name = match.group(1).strip()
+            # Sondaki KDV vb çöp karakterleri temizle (Örn: %08, X08)
+            name = re.sub(r'\s+[xX0-9%O]+$', '', name).strip()
+            # Eğer isim çok kısaysa atla
+            if len(name) < 3: continue
+            price = f'{match.group(2)},{match.group(3)}'
+            items.append(f'• {name} - {price} ₺')
+
+    description = "Otomatik OCR Analizi"
+    if items:
+        description += "\n\nAlınan Ürünler:\n" + "\n".join(items)
+
+    # 5. Kategori Bulma (Basit keyword eşleştirme)
     # 22222222-2222-2222-2222-222222222222 = Ulaşım, 11111111-1111-1111-1111-111111111111 = Yemek
     text_upper = text.upper()
     category_id = "11111111-1111-1111-1111-111111111111" # Default Food
@@ -67,7 +93,7 @@ def parse_receipt_text(text):
         "amount": amount,
         "type": "Expense",
         "date": date_str,
-        "description": "Otomatik OCR Analizi",
+        "description": description,
         "categoryId": category_id
     }
 
@@ -96,8 +122,10 @@ def process_image(image_path):
 def callback(ch, method, properties, body):
     print(" [x] Yeni mesaj alındı!")
     event = json.loads(body)
-    image_path = event.get('ImagePath')
-    user_id = event.get('UserId')
+    
+    # C# System.Text.Json varsayılan olarak camelCase gönderir.
+    image_path = event.get('ImagePath') or event.get('imagePath')
+    user_id = event.get('UserId') or event.get('userId')
 
     if not image_path:
         print("Resim yolu bulunamadı.")
