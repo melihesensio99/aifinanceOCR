@@ -16,4 +16,5 @@ public class TransactionDto
     public string CategoryColorHex { get; init; } = string.Empty;
     public bool IsAutomatic { get; init; }
     public string? Source { get; init; }
+    public string? ReceiptImageUrl { get; init; }
 }

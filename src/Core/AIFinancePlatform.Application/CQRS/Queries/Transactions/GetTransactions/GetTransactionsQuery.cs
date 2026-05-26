@@ -41,7 +41,8 @@ public class GetTransactionsQueryHandler : IRequestHandler<GetTransactionsQuery,
                 CategoryIcon = t.Category != null ? t.Category.Icon : string.Empty,
                 CategoryColorHex = t.Category != null ? t.Category.ColorHex : string.Empty,
                 IsAutomatic = t.IsAutomatic,
-                Source = t.Source
+                Source = t.Source,
+                ReceiptImageUrl = t.ReceiptImageUrl
             })
             .OrderByDescending(t => t.Date)
             .PaginatedListAsync(request.PageNumber, request.PageSize);

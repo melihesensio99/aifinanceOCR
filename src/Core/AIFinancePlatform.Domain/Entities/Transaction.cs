@@ -21,4 +21,5 @@ public class Transaction
 
     public bool IsAutomatic { get; set; } = false;
     public string? Source { get; set; } // "Manual", "OCR", "MockBank"
+    public string? ReceiptImageUrl { get; set; } // Orijinal fişin bulut veya lokal linki
 }

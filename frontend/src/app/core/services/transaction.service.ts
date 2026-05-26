@@ -15,6 +15,7 @@ export interface TransactionDto {
   categoryColorHex: string;
   isAutomatic: boolean;
   source: string;
+  receiptImageUrl?: string;
   expanded?: boolean;
 }
 

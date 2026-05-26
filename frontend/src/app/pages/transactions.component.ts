@@ -108,9 +108,17 @@ import { AuthService } from '../core/services/auth.service';
             <!-- Expanded Row Details -->
             <tr *ngIf="t.expanded" class="expanded-row-content">
               <td colspan="6" style="padding: 0;">
-                <div class="expanded-details">
-                  <h4 class="text-secondary mb-2" style="font-size: 0.9rem; text-transform: uppercase;">İşlem Detayları</h4>
-                  <div style="white-space: pre-wrap; font-family: monospace; font-size: 0.95rem; line-height: 1.6; color: var(--text-primary);">{{ t.description }}</div>
+                <div class="expanded-details flex-between" style="align-items: flex-start; gap: 24px;">
+                  <div style="flex: 1;">
+                    <h4 class="text-secondary mb-2" style="font-size: 0.9rem; text-transform: uppercase;">İşlem Detayları</h4>
+                    <div style="white-space: pre-wrap; font-family: monospace; font-size: 0.95rem; line-height: 1.6; color: var(--text-primary);">{{ t.description }}</div>
+                  </div>
+                  <div *ngIf="t.receiptImageUrl" class="receipt-image-container" style="width: 200px; flex-shrink: 0;">
+                    <h4 class="text-secondary mb-2" style="font-size: 0.8rem; text-transform: uppercase;">Orijinal Fiş</h4>
+                    <a [href]="t.receiptImageUrl" target="_blank" title="Büyütmek için tıklayın">
+                      <img [src]="t.receiptImageUrl" alt="Fiş Görseli" style="width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"/>
+                    </a>
+                  </div>
                 </div>
               </td>
             </tr>

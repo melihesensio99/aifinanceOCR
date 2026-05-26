@@ -17,7 +17,10 @@ public record CreateTransactionCommand(
     string Type, // "Income" or "Expense"
     DateTime Date,
     string Description,
-    Guid CategoryId
+    Guid CategoryId,
+    bool IsAutomatic,
+    string? Source,
+    string? ReceiptImageUrl
 ) : IRequest<CreateTransactionCommandResult>;
 
 public class CreateTransactionCommandHandler : IRequestHandler<CreateTransactionCommand, CreateTransactionCommandResult>
@@ -54,8 +57,9 @@ public class CreateTransactionCommandHandler : IRequestHandler<CreateTransaction
             Date = request.Date,
             Description = request.Description,
             CategoryId = request.CategoryId,
-            IsAutomatic = false,
-            Source = "Manual"
+            IsAutomatic = request.IsAutomatic,
+            Source = string.IsNullOrEmpty(request.Source) ? "Manual" : request.Source,
+            ReceiptImageUrl = request.ReceiptImageUrl
         };
 
         _context.Transactions.Add(transaction);

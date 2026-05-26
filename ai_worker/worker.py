@@ -87,7 +87,8 @@ def parse_receipt_text(text):
             "type": "Expense",
             "date": parsed.get("date", "2026-05-22T00:00:00Z"),
             "description": description.strip(),
-            "categoryId": parsed.get("categoryId", "11111111-1111-1111-1111-111111111111")
+            "categoryId": parsed.get("categoryId", "11111111-1111-1111-1111-111111111111"),
+            "receiptImageUrl": "" # Will be set later
         }
     except Exception as e:
         print(f"Mistral AI Hatası: {e}")
@@ -133,6 +134,7 @@ def callback(ch, method, properties, body):
 
     if parsed_data:
         parsed_data["UserId"] = user_id
+        parsed_data["receiptImageUrl"] = image_path
         print(f"Elde edilen veriler: {parsed_data}")
         try:
             headers = {
