@@ -1,6 +1,7 @@
 import pika
 import json
 import time
+import random
 import requests
 from bs4 import BeautifulSoup
 import urllib.parse
@@ -8,17 +9,54 @@ import urllib.parse
 RABBITMQ_HOST = 'localhost'
 QUEUE_NAME = 'price_scraping_queue'
 API_URL = 'https://localhost:7133/api/transaction/ai-webhook'
+CACHE_API_URL = 'https://localhost:7133/api/pricecache'
+
+# Simüle Edilmiş Ücretsiz Proxy Havuzu (Gerçek dünyada BrightData, Oxylabs gibi ücretli servisler kullanılır)
+PROXIES = [
+    # Format: {'http': 'http://ip:port', 'https': 'http://ip:port'}
+    None, # Kendi IP'miz (Test için)
+    # {'http': 'http://185.199.229.156:8080', 'https': 'http://185.199.229.156:8080'},
+    # {'http': 'http://148.251.20.79:8080', 'https': 'http://148.251.20.79:8080'}
+]
 
 def get_carrefour_price(product_name):
+    # 1. Önce kendi veritabanımızdaki Hafızaya (Cache) sor!
+    try:
+        headers = {'x-ai-api-key': 'secret_ai_key_123'}
+        cache_res = requests.get(f"{CACHE_API_URL}?term={urllib.parse.quote(product_name)}", headers=headers, verify=False)
+        if cache_res.status_code == 200:
+            cached_price = cache_res.json().get('price')
+            if cached_price:
+                print("   [CACHE] Fiyat hafızadan getirildi! (Carrefour'a istek atılmadı)")
+                return cached_price
+    except Exception as e:
+        print(f"   [CACHE HATA] {e}")
+
+    # 2. Eğer hafızada yoksa, Proxy Havuzundan rastgele bir proxy seç
+    proxy = random.choice(PROXIES)
+    if proxy:
+        print(f"   [PROXY] İstek şu proxy üzerinden çıkıyor: {proxy['http']}")
+    
     try:
         url = f'https://www.carrefoursa.com/search/?text={urllib.parse.quote(product_name)}'
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        res = requests.get(url, headers=headers, timeout=5)
+        req_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        
+        # Proxy kullanarak isteği gönder
+        res = requests.get(url, headers=req_headers, proxies=proxy, timeout=7)
         if res.status_code == 200:
             soup = BeautifulSoup(res.text, 'html.parser')
             items = soup.find_all('span', class_='item-price')
             if items:
-                return items[0].text.strip()
+                price = items[0].text.strip()
+                
+                # 3. Bulunan yeni fiyatı veritabanındaki Hafızaya (Cache) kaydet
+                try:
+                    payload = {"SearchTerm": product_name, "Price": price}
+                    requests.post(CACHE_API_URL, json=payload, headers=headers, verify=False)
+                except Exception as e:
+                    pass
+                    
+                return price
     except Exception as e:
         print(f"Scraping Hatası ({product_name}): {e}")
     return None

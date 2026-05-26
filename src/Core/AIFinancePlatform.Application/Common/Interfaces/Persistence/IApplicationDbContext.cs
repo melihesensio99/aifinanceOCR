@@ -13,6 +13,7 @@ public interface IApplicationDbContext
     DbSet<Budget> Budgets { get; }
     DbSet<Subscription> Subscriptions { get; }
     DbSet<Receipt> Receipts { get; }
+    DbSet<ProductPriceCache> ProductPriceCaches { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

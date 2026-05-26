@@ -11,12 +11,13 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     {
     }
 
-    public DbSet<User> Users => Set<User>();
-    public DbSet<Transaction> Transactions => Set<Transaction>();
-    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<User> Users { get; set; }
+    public DbSet<Transaction> Transactions { get; set; }
+    public DbSet<Category> Categories { get; set; }
     public DbSet<Budget> Budgets => Set<Budget>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<Receipt> Receipts => Set<Receipt>();
+    public DbSet<ProductPriceCache> ProductPriceCaches { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -103,6 +104,16 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 .WithMany(u => u.Receipts)
                 .HasForeignKey(r => r.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProductPriceCache>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.SearchTerm).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.Price).IsRequired().HasMaxLength(100);
+            
+            // SearchTerm üzerinde arama yapacağımız için index ekliyoruz (Performans için önemli)
+            entity.HasIndex(e => e.SearchTerm);
         });
 
         // Seed Default Categories
