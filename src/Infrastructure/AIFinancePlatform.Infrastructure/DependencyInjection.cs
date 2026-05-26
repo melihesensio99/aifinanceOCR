@@ -22,7 +22,20 @@ public static class DependencyInjection
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IEventPublisher, RabbitMqEventPublisher>();
-        services.AddScoped<IFileStorageService, LocalFileStorageService>();
+
+        var storageProvider = configuration["FileStorage:Provider"];
+        if (storageProvider == "AWS")
+        {
+            services.AddScoped<IFileStorageService, AwsS3StorageService>();
+        }
+        else if (storageProvider == "Azure")
+        {
+            services.AddScoped<IFileStorageService, AzureBlobStorageService>();
+        }
+        else
+        {
+            services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        }
 
         // Register Bank Integration Services
         services.AddScoped<MockGarantiBankService>();
