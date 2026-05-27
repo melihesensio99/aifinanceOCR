@@ -105,16 +105,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<ProductPriceCache>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.SearchTerm).IsRequired().HasMaxLength(255);
-            entity.Property(e => e.Price).IsRequired().HasMaxLength(100);
-            
-            // SearchTerm üzerinde arama yapacağımız için index ekliyoruz (Performans için önemli)
-            entity.HasIndex(e => e.SearchTerm);
-        });
-
         // Seed Default Categories
         var foodId = new Guid("11111111-1111-1111-1111-111111111111");
         var transId = new Guid("22222222-2222-2222-2222-222222222222");
