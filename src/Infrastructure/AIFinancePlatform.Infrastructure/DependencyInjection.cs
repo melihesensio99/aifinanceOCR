@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IEventPublisher, RabbitMqEventPublisher>();
+        services.AddSingleton<IRedisCacheService, RedisCacheService>();
 
         var storageProvider = configuration["FileStorage:Provider"];
         if (storageProvider == "AWS")
