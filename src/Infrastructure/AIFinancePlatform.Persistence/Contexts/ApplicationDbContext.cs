@@ -17,7 +17,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Budget> Budgets => Set<Budget>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<Receipt> Receipts => Set<Receipt>();
-    public DbSet<ProductPriceCache> ProductPriceCaches { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
