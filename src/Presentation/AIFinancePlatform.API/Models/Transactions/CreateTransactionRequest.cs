@@ -9,5 +9,7 @@ public record CreateTransactionRequest(
     DateTime Date,
     string Description,
     Guid CategoryId,
-    string? ReceiptImageUrl
+    bool IsAutomatic = false,
+    string? Source = "Manual",
+    string? ReceiptImageUrl = null
 );

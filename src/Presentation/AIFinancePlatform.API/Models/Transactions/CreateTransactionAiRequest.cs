@@ -9,5 +9,6 @@ public record CreateTransactionAiRequest(
     string Type,
     DateTime Date,
     string Description,
-    Guid CategoryId
+    Guid CategoryId,
+    string? ReceiptImageUrl = null
 );

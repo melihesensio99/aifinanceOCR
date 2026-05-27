@@ -34,7 +34,10 @@ public class TransactionController : ApiControllerBase
             request.Type,
             request.Date,
             request.Description,
-            request.CategoryId
+            request.CategoryId,
+            request.IsAutomatic,
+            request.Source,
+            request.ReceiptImageUrl
         );
         var result = await Mediator.Send(command);
         var response = new CreateTransactionResponse(result.Transaction, result.Message);
@@ -58,7 +61,10 @@ public class TransactionController : ApiControllerBase
             request.Type,
             request.Date,
             request.Description,
-            request.CategoryId
+            request.CategoryId,
+            true, // AI requests are automatic
+            "OCR",
+            request.ReceiptImageUrl
         );
         var result = await Mediator.Send(command);
         var response = new CreateTransactionResponse(result.Transaction, result.Message);
