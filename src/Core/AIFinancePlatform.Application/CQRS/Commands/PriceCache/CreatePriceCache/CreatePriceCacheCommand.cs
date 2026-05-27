@@ -2,8 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using AIFinancePlatform.Application.Common.Interfaces.Persistence;
-using AIFinancePlatform.Domain.Entities;
+using AIFinancePlatform.Application.Common.Interfaces.Services;
 
 namespace AIFinancePlatform.Application.CQRS.Commands.PriceCache.CreatePriceCache;
 
@@ -11,26 +10,20 @@ public record CreatePriceCacheCommand(string SearchTerm, string Price) : IReques
 
 public class CreatePriceCacheCommandHandler : IRequestHandler<CreatePriceCacheCommand, Guid>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IRedisCacheService _redisCacheService;
 
-    public CreatePriceCacheCommandHandler(IApplicationDbContext context)
+    public CreatePriceCacheCommandHandler(IRedisCacheService redisCacheService)
     {
-        _context = context;
+        _redisCacheService = redisCacheService;
     }
 
     public async Task<Guid> Handle(CreatePriceCacheCommand request, CancellationToken cancellationToken)
     {
-        var cache = new ProductPriceCache
-        {
-            Id = Guid.NewGuid(),
-            SearchTerm = request.SearchTerm,
-            Price = request.Price,
-            CreatedAt = DateTime.UtcNow
-        };
+        var key = $"pricecache:{request.SearchTerm.ToLowerInvariant().Replace(" ", "_")}";
+        
+        // Cache süresi 7 gün
+        await _redisCacheService.SetCacheValueAsync(key, request.Price, TimeSpan.FromDays(7));
 
-        _context.ProductPriceCaches.Add(cache);
-        await _context.SaveChangesAsync(cancellationToken);
-
-        return cache.Id;
+        return Guid.NewGuid(); // Redis key-value kullandığı için id'ye çok gerek yok ama arayüz uyumu için sahte guid dönüyoruz.
     }
 }
