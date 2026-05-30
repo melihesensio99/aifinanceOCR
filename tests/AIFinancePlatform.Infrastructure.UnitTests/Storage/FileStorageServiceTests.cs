@@ -13,23 +13,26 @@ namespace AIFinancePlatform.Infrastructure.UnitTests.Storage;
 public class FileStorageServiceTests
 {
     private readonly LocalFileStorageService _service;
+    private readonly Mock<Microsoft.AspNetCore.Hosting.IWebHostEnvironment> _mockEnv;
 
     public FileStorageServiceTests()
     {
-        _service = new LocalFileStorageService();
+        _mockEnv = new Mock<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
+        _mockEnv.Setup(e => e.ContentRootPath).Returns(Path.GetTempPath());
+        _service = new LocalFileStorageService(_mockEnv.Object);
     }
 
     [Fact]
-    public async Task UploadAsync_ShouldGenerateValidLocalPath()
+    public async Task SaveFileAsync_ShouldGenerateValidLocalPath()
     {
         // Arrange
         var fileName = "test_image.jpg";
         var fileStream = new MemoryStream();
 
-        // Act & Assert
-        // The service should just throw because we are not using a valid physical file path in tests maybe,
-        // or it will return a path.
-        var path = await _service.UploadFileAsync(fileStream, fileName);
+        // Act
+        var path = await _service.SaveFileAsync(fileStream, fileName);
+        
+        // Assert
         path.Should().Contain(fileName);
     }
 }

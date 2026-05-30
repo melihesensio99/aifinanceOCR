@@ -34,9 +34,7 @@ public class JwtTokenGeneratorTests
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Email = "test@test.com",
-            FirstName = "Test",
-            LastName = "User"
+            Email = "test@test.com"
         };
 
         // Act
