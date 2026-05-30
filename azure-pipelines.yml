@@ -1,0 +1,21 @@
+trigger:
+  - master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Install .NET 10 SDK'
+  inputs:
+    packageType: 'sdk'
+    version: '10.x'
+
+- script: dotnet build AIFinancePlatform.sln --configuration $(buildConfiguration)
+  displayName: 'Build the Project'
+
+- script: dotnet test AIFinancePlatform.sln --configuration $(buildConfiguration) --no-build --verbosity normal
+  displayName: 'Run Unit and Integration Tests'
