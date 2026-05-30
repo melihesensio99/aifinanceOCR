@@ -21,6 +21,7 @@ public static class DependencyInjection
         // Register Services
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        services.AddSingleton<RabbitMQ.Client.IConnectionFactory>(sp => new RabbitMQ.Client.ConnectionFactory { HostName = "localhost" });
         services.AddSingleton<IEventPublisher, RabbitMqEventPublisher>();
         services.AddSingleton<IRedisCacheService, RedisCacheService>();
 

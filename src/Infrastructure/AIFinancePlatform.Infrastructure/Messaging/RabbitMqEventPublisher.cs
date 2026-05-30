@@ -8,11 +8,11 @@ namespace AIFinancePlatform.Infrastructure.Messaging;
 
 public class RabbitMqEventPublisher : IEventPublisher
 {
-    private readonly ConnectionFactory _factory;
+    private readonly IConnectionFactory _factory;
 
-    public RabbitMqEventPublisher()
+    public RabbitMqEventPublisher(IConnectionFactory factory)
     {
-        _factory = new ConnectionFactory { HostName = "localhost" };
+        _factory = factory;
     }
 
     public async Task PublishAsync<T>(T @event, string queueName) where T : class
