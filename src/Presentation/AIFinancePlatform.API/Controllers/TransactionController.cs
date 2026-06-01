@@ -24,6 +24,16 @@ public class TransactionController : ApiControllerBase
         return Ok(result);
     }
 
+    [HttpGet("export-pdf")]
+    public async Task<IActionResult> ExportPdf()
+    {
+        var query = new AIFinancePlatform.Application.CQRS.Queries.Transactions.GetTransactionsPdf.GetTransactionsPdfQuery(CurrentUserId);
+        var pdfBytes = await Mediator.Send(query);
+        
+        // Byte dizisini (PDF dosyasını) doğrudan tarayıcıya indirtiyoruz
+        return File(pdfBytes, "application/pdf", $"HarcamaRaporu_{DateTime.Now:yyyyMMdd}.pdf");
+    }
+
     [HttpPost]
     public async Task<ActionResult<CreateTransactionResponse>> Create([FromBody] CreateTransactionRequest request)
     {
