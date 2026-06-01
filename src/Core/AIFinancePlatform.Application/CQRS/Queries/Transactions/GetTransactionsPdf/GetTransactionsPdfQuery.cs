@@ -5,6 +5,7 @@ using QuestPDF.Infrastructure;
 using AIFinancePlatform.Application.Common.Interfaces.Persistence;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System;
 
@@ -17,11 +18,11 @@ public record GetTransactionsPdfQuery(Guid UserId) : IRequest<byte[]>;
 // 2. İsteği yakalayacak İŞLEYİCİ (Handler)
 public class GetTransactionsPdfQueryHandler : IRequestHandler<GetTransactionsPdfQuery, byte[]>
 {
-    private readonly ITransactionRepository _repository;
+    private readonly IApplicationDbContext _context;
 
-    public GetTransactionsPdfQueryHandler(ITransactionRepository repository)
+    public GetTransactionsPdfQueryHandler(IApplicationDbContext context)
     {
-        _repository = repository;
+        _context = context;
         // QuestPDF ücretsiz kullanım lisans onayı
         QuestPDF.Settings.License = LicenseType.Community;
     }
@@ -29,8 +30,10 @@ public class GetTransactionsPdfQueryHandler : IRequestHandler<GetTransactionsPdf
     public async Task<byte[]> Handle(GetTransactionsPdfQuery request, CancellationToken cancellationToken)
     {
         // 1. Veritabanından kullanıcının işlemlerini çekiyoruz
-        var transactions = await _repository.GetByUserIdAsync(request.UserId, cancellationToken);
-        var transactionList = transactions.ToList();
+        var transactionList = await _context.Transactions
+            .Where(t => t.UserId == request.UserId)
+            .OrderByDescending(t => t.Date)
+            .ToListAsync(cancellationToken);
 
         // 2. QuestPDF ile harika bir PDF çiziyoruz
         var pdfDocument = Document.Create(container =>
