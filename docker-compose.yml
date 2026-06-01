@@ -1,11 +1,40 @@
 version: '3.8'
 
 services:
+  api:
+    image: aifinanceplatform-api
+    build:
+      context: .
+      dockerfile: src/Presentation/AIFinancePlatform.API/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=AIFinanceDb;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True
+      - RedisCache:ConnectionString=redis:6379
+      - RabbitMQ:HostName=rabbitmq
+    depends_on:
+      - sqlserver
+      - redis
+      - rabbitmq
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: aifinance-sql
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong!Passw0rd
+    volumes:
+      - sqlvolume:/var/opt/mssql
+
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3-management-alpine
     container_name: aifinance-rabbitmq
     ports:
-      - "5672:5672"   # AMQP protocol port
+      - "5672:5672"   # Message broker port
       - "15672:15672" # Management UI port
     environment:
       RABBITMQ_DEFAULT_USER: guest
@@ -22,5 +51,6 @@ services:
       - redis_data:/data
 
 volumes:
+  sqlvolume:
   rabbitmq_data:
   redis_data:
