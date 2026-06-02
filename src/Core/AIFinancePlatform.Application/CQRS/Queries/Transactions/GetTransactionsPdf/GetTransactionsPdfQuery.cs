@@ -41,7 +41,7 @@ public class GetTransactionsPdfQueryHandler : IRequestHandler<GetTransactionsPdf
             container.Page(page =>
             {
                 page.Size(PageSizes.A4);
-                page.Margin(2, Unit.Centimetre);
+                page.Margin(2, QuestPDF.Infrastructure.Unit.Centimetre);
                 page.PageColor(Colors.White);
                 page.DefaultTextStyle(x => x.FontSize(11).FontFamily(Fonts.Arial));
 
@@ -50,7 +50,7 @@ public class GetTransactionsPdfQueryHandler : IRequestHandler<GetTransactionsPdf
                     .SemiBold().FontSize(20).FontColor(Colors.Blue.Darken2);
 
                 // İÇERİK KISMI (Tablo)
-                page.Content().PaddingVertical(1, Unit.Centimetre).Table(table =>
+                page.Content().PaddingVertical(1, QuestPDF.Infrastructure.Unit.Centimetre).Table(table =>
                 {
                     table.ColumnsDefinition(columns =>
                     {
