@@ -41,6 +41,10 @@ export class TransactionService {
     return this.http.get<PaginatedList<TransactionDto>>(`${this.apiUrl}?pageNumber=${pageNumber}&pageSize=${pageSize}`);
   }
 
+  downloadPdf(): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/export-pdf`, { responseType: 'blob' });
+  }
+
   syncBank(bankName: string): Observable<any> {
     return this.http.post(`${this.bankApiUrl}/sync`, { bankName });
   }

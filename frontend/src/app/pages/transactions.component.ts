@@ -31,6 +31,10 @@ import { AuthService } from '../core/services/auth.service';
             📸 {{ isUploading ? 'Yükleniyor...' : 'Fiş Okut' }}
           </button>
 
+          <button class="btn-primary" style="background: var(--accent-color);" (click)="downloadPdf()" [disabled]="isDownloadingPdf">
+            {{ isDownloadingPdf ? 'İndiriliyor...' : 'PDF İndir 📄' }}
+          </button>
+
           <select class="form-control" [(ngModel)]="selectedBank" style="min-width: 150px;">
             <option value="Garanti">Garanti BBVA</option>
             <option value="Akbank">Akbank</option>
@@ -282,6 +286,7 @@ export class TransactionsComponent implements OnInit, OnDestroy {
   isLoading = false;
   isSyncing = false;
   isUploading = false;
+  isDownloadingPdf = false;
   syncMessage = '';
   currentPage = 1;
   selectedBank = 'Garanti';
@@ -342,6 +347,35 @@ export class TransactionsComponent implements OnInit, OnDestroy {
         console.error('Banka eşitleme hatası:', err);
         this.isSyncing = false;
         this.syncMessage = 'Eşitleme sırasında bir hata oluştu.';
+      }
+    });
+  }
+
+  downloadPdf() {
+    this.isDownloadingPdf = true;
+    this.syncMessage = 'PDF raporunuz hazırlanıyor...';
+    
+    this.transactionService.downloadPdf().subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `HarcamaRaporu_${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        this.isDownloadingPdf = false;
+        this.syncMessage = 'PDF başarıyla indirildi!';
+        setTimeout(() => this.syncMessage = '', 3000);
+      },
+      error: (err: any) => {
+        console.error('PDF indirme hatası:', err);
+        this.isDownloadingPdf = false;
+        this.syncMessage = 'PDF indirilirken bir hata oluştu.';
+        setTimeout(() => this.syncMessage = '', 3000);
       }
     });
   }
