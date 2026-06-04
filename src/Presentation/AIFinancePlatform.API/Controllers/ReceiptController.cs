@@ -14,7 +14,7 @@ namespace AIFinancePlatform.API.Controllers;
 public class ReceiptController : ApiControllerBase
 {
     [HttpPost("upload")]
-    public async Task<ActionResult<UploadReceiptResponse>> UploadReceipt(IFormFile file)
+    public async Task<ActionResult> UploadReceipt(IFormFile file)
     {
         if (file == null || file.Length == 0)
         {
@@ -29,8 +29,13 @@ public class ReceiptController : ApiControllerBase
         );
 
         var result = await Mediator.Send(command);
+        
+        if (!result.IsSuccess || result.Data == null)
+        {
+            return HandleResult(result);
+        }
 
-        var response = new UploadReceiptResponse(result.Message, result.OriginalFileName);
+        var response = new UploadReceiptResponse(result.Data.Message, result.Data.OriginalFileName);
         return Accepted(response);
     }
 }

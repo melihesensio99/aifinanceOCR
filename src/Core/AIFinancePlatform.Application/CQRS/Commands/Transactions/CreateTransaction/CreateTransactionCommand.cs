@@ -8,6 +8,8 @@ using AIFinancePlatform.Application.DTOs.Transactions;
 using AIFinancePlatform.Domain.Entities;
 using AIFinancePlatform.Domain.Enums;
 
+using AIFinancePlatform.Application.Common.Models;
+
 namespace AIFinancePlatform.Application.CQRS.Commands.Transactions.CreateTransaction;
 
 public record CreateTransactionCommand(
@@ -21,9 +23,9 @@ public record CreateTransactionCommand(
     bool IsAutomatic,
     string? Source,
     string? ReceiptImageUrl
-) : IRequest<CreateTransactionCommandResult>;
+) : IRequest<Result<CreateTransactionCommandResult>>;
 
-public class CreateTransactionCommandHandler : IRequestHandler<CreateTransactionCommand, CreateTransactionCommandResult>
+public class CreateTransactionCommandHandler : IRequestHandler<CreateTransactionCommand, Result<CreateTransactionCommandResult>>
 {
     private readonly IApplicationDbContext _context;
 
@@ -32,11 +34,11 @@ public class CreateTransactionCommandHandler : IRequestHandler<CreateTransaction
         _context = context;
     }
 
-    public async Task<CreateTransactionCommandResult> Handle(CreateTransactionCommand request, CancellationToken cancellationToken)
+    public async Task<Result<CreateTransactionCommandResult>> Handle(CreateTransactionCommand request, CancellationToken cancellationToken)
     {
         if (!Enum.TryParse<TransactionType>(request.Type, out var transactionType))
         {
-            throw new ArgumentException("Geçersiz işlem tipi. 'Income' veya 'Expense' olmalıdır.");
+            return Result<CreateTransactionCommandResult>.Failure("Geçersiz işlem tipi. 'Income' veya 'Expense' olmalıdır.");
         }
 
         var category = await _context.Categories
@@ -44,7 +46,7 @@ public class CreateTransactionCommandHandler : IRequestHandler<CreateTransaction
 
         if (category == null)
         {
-            throw new Exception("Kategori bulunamadı.");
+            return Result<CreateTransactionCommandResult>.Failure("Kategori bulunamadı.");
         }
 
         var transaction = new Transaction
@@ -81,6 +83,6 @@ public class CreateTransactionCommandHandler : IRequestHandler<CreateTransaction
             Source = transaction.Source
         };
 
-        return new CreateTransactionCommandResult(transactionDto, true, "Harcama başarıyla oluşturuldu.");
+        return Result<CreateTransactionCommandResult>.Success(new CreateTransactionCommandResult(transactionDto, true, "Harcama başarıyla oluşturuldu."));
     }
 }
