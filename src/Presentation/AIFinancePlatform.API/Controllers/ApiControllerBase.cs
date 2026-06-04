@@ -3,6 +3,7 @@ using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using AIFinancePlatform.Application.Common.Models;
 
 namespace AIFinancePlatform.API.Controllers;
 
@@ -25,5 +26,22 @@ public abstract class ApiControllerBase : ControllerBase
             }
             return userId;
         }
+    }
+
+    protected ActionResult HandleResult<T>(Result<T> result)
+    {
+        if (result == null) return NotFound();
+        if (result.IsSuccess && result.Data != null) return Ok(result.Data);
+        if (result.IsSuccess && result.Data == null) return NotFound();
+        
+        return BadRequest(new { message = result.ErrorMessage, errors = result.Errors });
+    }
+
+    protected ActionResult HandleResult(Result result)
+    {
+        if (result == null) return NotFound();
+        if (result.IsSuccess) return Ok();
+        
+        return BadRequest(new { message = result.ErrorMessage, errors = result.Errors });
     }
 }

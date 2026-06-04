@@ -1,10 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentValidation;
 using MediatR;
-using ValidationException = AIFinancePlatform.Application.Common.Exceptions.ValidationException;
+using AIFinancePlatform.Application.Common.Models;
 
 namespace AIFinancePlatform.Application.Common.Behaviors;
 
@@ -30,11 +31,27 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
             var failures = validationResults
                 .Where(r => r.Errors.Any())
                 .SelectMany(r => r.Errors)
+                .Select(f => f.ErrorMessage)
                 .ToList();
 
             if (failures.Any())
             {
-                throw new ValidationException(failures);
+                if (typeof(TResponse).IsGenericType && typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
+                {
+                    var resultType = typeof(TResponse).GetGenericArguments()[0];
+                    var failureMethod = typeof(Result<>)
+                        .MakeGenericType(resultType)
+                        .GetMethod("Failure", new[] { typeof(string), typeof(IReadOnlyCollection<string>) });
+
+                    return (TResponse)failureMethod.Invoke(null, new object[] { "Validasyon Hatası", failures });
+                }
+                else if (typeof(TResponse) == typeof(Result))
+                {
+                    return (TResponse)(object)Result.Failure("Validasyon Hatası", failures);
+                }
+                
+                // Eğer TResponse bir Result tipi değilse, eski sistem devam etsin (Güvenlik için)
+                throw new Common.Exceptions.ValidationException(validationResults.SelectMany(r => r.Errors));
             }
         }
 

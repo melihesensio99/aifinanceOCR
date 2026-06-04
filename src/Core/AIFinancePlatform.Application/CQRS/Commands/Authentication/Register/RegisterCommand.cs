@@ -8,15 +8,17 @@ using AIFinancePlatform.Application.Common.Interfaces.Persistence;
 using AIFinancePlatform.Application.DTOs.Authentication;
 using AIFinancePlatform.Domain.Entities;
 
+using AIFinancePlatform.Application.Common.Models;
+
 namespace AIFinancePlatform.Application.CQRS.Commands.Authentication.Register;
 
 public record RegisterCommand(
     string FullName,
     string Email,
     string Password
-) : IRequest<AuthResponseDto>;
+) : IRequest<Result<AuthResponseDto>>;
 
-public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthResponseDto>
+public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<AuthResponseDto>>
 {
     private readonly IApplicationDbContext _context;
     private readonly IPasswordHasher _passwordHasher;
@@ -32,7 +34,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
         _jwtTokenGenerator = jwtTokenGenerator;
     }
 
-    public async Task<AuthResponseDto> Handle(RegisterCommand request, CancellationToken cancellationToken)
+    public async Task<Result<AuthResponseDto>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         // Check if user already exists
         var existingUser = await _context.Users
@@ -40,7 +42,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
 
         if (existingUser != null)
         {
-            throw new Exception("Bu e-posta adresi zaten kullanımda.");
+            return Result<AuthResponseDto>.Failure("Bu e-posta adresi zaten kullanımda.");
         }
 
         // Hash password
@@ -70,13 +72,13 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
         _context.Users.Update(user);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new AuthResponseDto(
+        return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id,
             user.FullName,
             user.Email,
             user.Role,
             token,
             refreshToken
-        );
+        ));
     }
 }
