@@ -3,16 +3,25 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AIFinancePlatform.Application.CQRS.Queries.PriceCache.GetPriceCache;
 using AIFinancePlatform.Application.CQRS.Commands.PriceCache.CreatePriceCache;
+using Microsoft.Extensions.Configuration;
 
 namespace AIFinancePlatform.API.Controllers;
 
 [AllowAnonymous]
 public class PriceCacheController : ApiControllerBase
 {
+    private readonly IConfiguration _configuration;
+
+    public PriceCacheController(IConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
+
     [HttpGet]
     public async Task<ActionResult<string>> Get([FromQuery] string term, [FromHeader(Name = "x-ai-api-key")] string apiKey)
     {
-        if (apiKey != "secret_ai_key_123")
+        var expectedApiKey = _configuration["AIApiKey"];
+        if (apiKey != expectedApiKey)
         {
             return Unauthorized(new { message = "Geçersiz AI API Key." });
         }
@@ -35,7 +44,8 @@ public class PriceCacheController : ApiControllerBase
     [HttpPost]
     public async Task<ActionResult> Create([FromBody] CreatePriceCacheRequest request, [FromHeader(Name = "x-ai-api-key")] string apiKey)
     {
-        if (apiKey != "secret_ai_key_123")
+        var expectedApiKey = _configuration["AIApiKey"];
+        if (apiKey != expectedApiKey)
         {
             return Unauthorized(new { message = "Geçersiz AI API Key." });
         }

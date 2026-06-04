@@ -14,23 +14,29 @@ namespace AIFinancePlatform.API.Controllers;
 public class AuthController : ApiControllerBase
 {
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterCommand command)
+    public async Task<ActionResult> Register([FromBody] RegisterCommand command)
     {
         var result = await Mediator.Send(command);
-        SetRefreshTokenCookie(result.RefreshToken);
-        return Ok(result);
+        if (result.IsSuccess && result.Data != null)
+        {
+            SetRefreshTokenCookie(result.Data.RefreshToken);
+        }
+        return HandleResult(result);
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginCommand command)
+    public async Task<ActionResult> Login([FromBody] LoginCommand command)
     {
         var result = await Mediator.Send(command);
-        SetRefreshTokenCookie(result.RefreshToken);
-        return Ok(result);
+        if (result.IsSuccess && result.Data != null)
+        {
+            SetRefreshTokenCookie(result.Data.RefreshToken);
+        }
+        return HandleResult(result);
     }
 
     [HttpPost("refresh")]
-    public async Task<ActionResult<AuthResponseDto>> Refresh()
+    public async Task<ActionResult> Refresh()
     {
         var refreshToken = Request.Cookies["refreshToken"];
         if (string.IsNullOrEmpty(refreshToken))
@@ -38,17 +44,19 @@ public class AuthController : ApiControllerBase
             return Unauthorized(new { message = "Refresh token bulunamadı." });
         }
 
-        try
+        var command = new RefreshCommand(refreshToken);
+        var result = await Mediator.Send(command);
+        
+        if (result.IsSuccess && result.Data != null)
         {
-            var command = new RefreshCommand(refreshToken);
-            var result = await Mediator.Send(command);
-            SetRefreshTokenCookie(result.RefreshToken);
-            return Ok(result);
+            SetRefreshTokenCookie(result.Data.RefreshToken);
         }
-        catch (Exception ex)
+        else if (!result.IsSuccess)
         {
-            return Unauthorized(new { message = ex.Message });
+            return Unauthorized(new { message = result.ErrorMessage });
         }
+        
+        return HandleResult(result);
     }
 
     private void SetRefreshTokenCookie(string refreshToken)

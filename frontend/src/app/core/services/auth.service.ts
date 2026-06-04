@@ -30,6 +30,17 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/register`, userData);
   }
 
+  refreshToken(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/refresh`, {}).pipe(
+      tap((response: any) => {
+        if (response && response.token) {
+          localStorage.setItem(this.tokenKey, response.token);
+          this.isLoggedInSubject.next(true);
+        }
+      })
+    );
+  }
+
   logout(): void {
     localStorage.removeItem(this.tokenKey);
     this.isLoggedInSubject.next(false);
