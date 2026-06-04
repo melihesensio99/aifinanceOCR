@@ -7,49 +7,37 @@ using AIFinancePlatform.Application.Common.Interfaces.Authentication;
 using AIFinancePlatform.Application.Common.Interfaces.Persistence;
 using AIFinancePlatform.Application.DTOs.Authentication;
 
-namespace AIFinancePlatform.Application.CQRS.Commands.Authentication.Login;
+namespace AIFinancePlatform.Application.CQRS.Commands.Authentication.Refresh;
 
-public record LoginCommand(
-    string Email,
-    string Password
-) : IRequest<AuthResponseDto>;
+public record RefreshCommand(string RefreshToken) : IRequest<AuthResponseDto>;
 
-public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResponseDto>
+public class RefreshCommandHandler : IRequestHandler<RefreshCommand, AuthResponseDto>
 {
     private readonly IApplicationDbContext _context;
-    private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
 
-    public LoginCommandHandler(
+    public RefreshCommandHandler(
         IApplicationDbContext context,
-        IPasswordHasher passwordHasher,
         IJwtTokenGenerator jwtTokenGenerator)
     {
         _context = context;
-        _passwordHasher = passwordHasher;
         _jwtTokenGenerator = jwtTokenGenerator;
     }
 
-    public async Task<AuthResponseDto> Handle(LoginCommand request, CancellationToken cancellationToken)
+    public async Task<AuthResponseDto> Handle(RefreshCommand request, CancellationToken cancellationToken)
     {
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
+            .FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken, cancellationToken);
 
-        if (user == null)
+        if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
         {
-            throw new Exception("E-posta veya şifre hatalı.");
-        }
-
-        var isPasswordValid = _passwordHasher.VerifyPassword(request.Password, user.PasswordHash);
-        if (!isPasswordValid)
-        {
-            throw new Exception("E-posta veya şifre hatalı.");
+            throw new Exception("Geçersiz veya süresi dolmuş Refresh Token.");
         }
 
         var token = _jwtTokenGenerator.GenerateToken(user);
-        var refreshToken = _jwtTokenGenerator.GenerateRefreshToken();
+        var newRefreshToken = _jwtTokenGenerator.GenerateRefreshToken();
 
-        user.RefreshToken = refreshToken;
+        user.RefreshToken = newRefreshToken;
         user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30);
 
         _context.Users.Update(user);
@@ -61,7 +49,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResponseDto
             user.Email,
             user.Role,
             token,
-            refreshToken
+            newRefreshToken
         );
     }
 }

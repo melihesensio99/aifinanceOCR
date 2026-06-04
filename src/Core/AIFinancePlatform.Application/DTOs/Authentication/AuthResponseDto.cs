@@ -1,5 +1,7 @@
 using System;
 
+using System.Text.Json.Serialization;
+
 namespace AIFinancePlatform.Application.DTOs.Authentication;
 
 public record AuthResponseDto(
@@ -7,5 +9,6 @@ public record AuthResponseDto(
     string FullName,
     string Email,
     string Role,
-    string Token
+    string Token,
+    [property: JsonIgnore] string RefreshToken
 );
