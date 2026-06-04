@@ -22,12 +22,6 @@ public class BankController : ApiControllerBase
 
         var command = new SyncBankTransactionsCommand(bankType, CurrentUserId);
         var result = await Mediator.Send(command);
-
-        if (result)
-        {
-            return Ok(new { message = "Banka işlemleri başarıyla eşitlendi." });
-        }
-
-        return BadRequest(new { message = "Eşitleme sırasında bir hata oluştu." });
+        return HandleResult(result);
     }
 }

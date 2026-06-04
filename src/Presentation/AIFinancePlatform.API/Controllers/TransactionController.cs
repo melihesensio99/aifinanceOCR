@@ -35,7 +35,7 @@ public class TransactionController : ApiControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<CreateTransactionResponse>> Create([FromBody] CreateTransactionRequest request)
+    public async Task<ActionResult> Create([FromBody] CreateTransactionRequest request)
     {
         var command = new CreateTransactionCommand(
             CurrentUserId,
@@ -50,7 +50,13 @@ public class TransactionController : ApiControllerBase
             request.ReceiptImageUrl
         );
         var result = await Mediator.Send(command);
-        var response = new CreateTransactionResponse(result.Transaction, result.Message);
+        
+        if (!result.IsSuccess || result.Data == null)
+        {
+            return HandleResult(result);
+        }
+
+        var response = new CreateTransactionResponse(result.Data.Transaction, result.Data.Message);
         return Ok(response);
     }
 

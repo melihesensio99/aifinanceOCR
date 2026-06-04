@@ -21,12 +21,6 @@ public class BankIntegrationController : ApiControllerBase
 
         var command = new SyncBankTransactionsCommand(bankType, CurrentUserId);
         var result = await Mediator.Send(command);
-
-        if (result)
-        {
-            return Ok(new { Message = "Bank transactions synced successfully." });
-        }
-
-        return BadRequest(new { Message = "Failed to sync bank transactions." });
+        return HandleResult(result);
     }
 }
