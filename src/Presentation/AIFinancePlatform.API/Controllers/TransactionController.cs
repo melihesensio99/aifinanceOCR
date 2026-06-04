@@ -54,48 +54,6 @@ public class TransactionController : ApiControllerBase
         return Ok(response);
     }
 
-    [AllowAnonymous]
-    [HttpPost("ai-webhook")]
-    public async Task<ActionResult<CreateTransactionResponse>> CreateFromAi([FromBody] CreateTransactionAiRequest request, [FromHeader(Name = "x-ai-api-key")] string apiKey)
-    {
-        // Basit bir iç mikroservis güvenliği (Gerçek senaryoda Config'den okunur)
-        if (apiKey != "secret_ai_key_123")
-        {
-            return Unauthorized(new { message = "Geçersiz AI API Key." });
-        }
-
-        var command = new CreateTransactionCommand(
-            request.UserId,
-            request.Title,
-            request.Amount,
-            request.Type,
-            request.Date,
-            request.Description,
-            request.CategoryId,
-            true, // AI requests are automatic
-            "OCR",
-            request.ReceiptImageUrl
-        );
-        var result = await Mediator.Send(command);
-        var response = new CreateTransactionResponse(result.Transaction, result.Message);
-        return Ok(response);
-    }
-
-    [AllowAnonymous]
-    [HttpPut("ai-webhook/{id}/append-description")]
-    public async Task<ActionResult> AppendDescriptionFromAi(Guid id, [FromBody] AppendDescriptionRequest request, [FromHeader(Name = "x-ai-api-key")] string apiKey)
-    {
-        if (apiKey != "secret_ai_key_123")
-        {
-            return Unauthorized(new { message = "Geçersiz AI API Key." });
-        }
-
-        var command = new AppendTransactionDescriptionCommand(id, request.TextToAppend);
-        var result = await Mediator.Send(command);
-        
-        if (!result) return NotFound();
-        return Ok();
-    }
 
     [HttpDelete("{id}")]
     public async Task<ActionResult<DeleteTransactionResponse>> Delete(Guid id)
