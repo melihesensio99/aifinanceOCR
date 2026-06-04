@@ -11,6 +11,10 @@ public class User
     public string FullName { get; set; } = string.Empty;
     public string Role { get; set; } = "User"; // "Admin", "User"
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    
+    // Refresh Token Properties
+    public string? RefreshToken { get; set; }
+    public DateTime? RefreshTokenExpiryTime { get; set; }
 
     // Navigation Properties
     public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();

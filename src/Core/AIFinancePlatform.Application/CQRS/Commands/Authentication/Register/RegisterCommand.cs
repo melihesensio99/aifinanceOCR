@@ -62,13 +62,21 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
 
         // Generate token
         var token = _jwtTokenGenerator.GenerateToken(user);
+        var refreshToken = _jwtTokenGenerator.GenerateRefreshToken();
+
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30);
+
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync(cancellationToken);
 
         return new AuthResponseDto(
             user.Id,
             user.FullName,
             user.Email,
             user.Role,
-            token
+            token,
+            refreshToken
         );
     }
 }
