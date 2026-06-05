@@ -37,7 +37,8 @@ public class GetPriceCacheQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().Be(expectedPrice);
+        result.IsSuccess.Should().BeTrue();
+        result.Data.Should().Be(expectedPrice);
     }
 
     [Fact]
@@ -56,6 +57,8 @@ public class GetPriceCacheQueryHandlerTests
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
-        result.Should().BeNull();
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Data.Should().BeNull();
     }
 }
