@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace AIFinancePlatform.Application.CQRS.Commands.Auth.Login;
+namespace AIFinancePlatform.Application.CQRS.Commands.Authentication.Login;
 
 public class LoginCommandValidator : AbstractValidator<LoginCommand>
 {

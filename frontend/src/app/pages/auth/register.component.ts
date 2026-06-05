@@ -17,15 +17,9 @@ import { AuthService } from '../../core/services/auth.service';
         </div>
         
         <form (ngSubmit)="onSubmit()" #registerForm="ngForm">
-          <div class="flex-between" style="gap: 16px;">
-            <div class="form-group" style="flex: 1;">
-              <label class="form-label">Ad</label>
-              <input type="text" class="form-control" name="firstName" [(ngModel)]="userData.firstName" required placeholder="Adınız">
-            </div>
-            <div class="form-group" style="flex: 1;">
-              <label class="form-label">Soyad</label>
-              <input type="text" class="form-control" name="lastName" [(ngModel)]="userData.lastName" required placeholder="Soyadınız">
-            </div>
+          <div class="form-group">
+            <label class="form-label">Ad Soyad</label>
+            <input type="text" class="form-control" name="fullName" [(ngModel)]="userData.fullName" required placeholder="Adınız Soyadınız">
           </div>
 
           <div class="form-group">
@@ -79,7 +73,7 @@ import { AuthService } from '../../core/services/auth.service';
   `]
 })
 export class RegisterComponent {
-  userData = { firstName: '', lastName: '', email: '', password: '' };
+  userData = { fullName: '', email: '', password: '' };
   isLoading = false;
   errorMessage = '';
 
