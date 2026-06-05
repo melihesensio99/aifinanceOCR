@@ -17,21 +17,24 @@ namespace AIFinancePlatform.API.Controllers;
 public class TransactionController : ApiControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PaginatedList<TransactionDto>>> Get([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    public async Task<ActionResult> Get([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         var query = new GetTransactionsQuery(CurrentUserId, pageNumber, pageSize);
         var result = await Mediator.Send(query);
-        return Ok(result);
+        return HandleResult(result);
     }
 
     [HttpGet("export-pdf")]
     public async Task<IActionResult> ExportPdf()
     {
         var query = new AIFinancePlatform.Application.CQRS.Queries.Transactions.GetTransactionsPdf.GetTransactionsPdfQuery(CurrentUserId);
-        var pdfBytes = await Mediator.Send(query);
+        var result = await Mediator.Send(query);
         
+        if (!result.IsSuccess || result.Data == null)
+            return NotFound("PDF oluşturulamadı.");
+
         // Byte dizisini (PDF dosyasını) doğrudan tarayıcıya indirtiyoruz
-        return File(pdfBytes, "application/pdf", $"HarcamaRaporu_{DateTime.Now:yyyyMMdd}.pdf");
+        return File(result.Data, "application/pdf", $"HarcamaRaporu_{DateTime.Now:yyyyMMdd}.pdf");
     }
 
     [HttpPost]
@@ -62,11 +65,17 @@ public class TransactionController : ApiControllerBase
 
 
     [HttpDelete("{id}")]
-    public async Task<ActionResult<DeleteTransactionResponse>> Delete(Guid id)
+    public async Task<ActionResult> Delete(Guid id)
     {
         var command = new DeleteTransactionCommand(id, CurrentUserId);
         var result = await Mediator.Send(command);
-        var response = new DeleteTransactionResponse(result.DeletedId, result.Message);
+        
+        if (!result.IsSuccess || result.Data == null)
+        {
+            return HandleResult(result);
+        }
+
+        var response = new DeleteTransactionResponse(result.Data.DeletedId, result.Data.Message);
         return Ok(response);
     }
 }

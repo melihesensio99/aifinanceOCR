@@ -64,7 +64,7 @@ public class AiWebhookController : ApiControllerBase
         var command = new AppendTransactionDescriptionCommand(id, request.TextToAppend);
         var result = await Mediator.Send(command);
         
-        if (!result) return NotFound();
+        if (!result.IsSuccess) return NotFound();
         return Ok();
     }
 }

@@ -55,14 +55,16 @@ public class GetTransactionsQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.TotalCount.Should().Be(10);
-        result.TotalPages.Should().Be(4); // 10/3 = 3.33 -> 4 sayfa
-        result.HasPreviousPage.Should().BeTrue(); // 2. sayfadayız, öncesi var
-        result.HasNextPage.Should().BeTrue();     // 2. sayfadayız, sonrası var
+        result.IsSuccess.Should().BeTrue();
+        result.Data.Should().NotBeNull();
+        result.Data.TotalCount.Should().Be(10);
+        result.Data.TotalPages.Should().Be(4); // 10/3 = 3.33 -> 4 sayfa
+        result.Data.HasPreviousPage.Should().BeTrue(); // 2. sayfadayız, öncesi var
+        result.Data.HasNextPage.Should().BeTrue();     // 2. sayfadayız, sonrası var
         
-        result.Items.Should().HaveCount(3);
-        result.Items[0].Title.Should().Be("Test Fişi 4");
-        result.Items[1].Title.Should().Be("Test Fişi 5");
-        result.Items[2].Title.Should().Be("Test Fişi 6");
+        result.Data.Items.Should().HaveCount(3);
+        result.Data.Items[0].Title.Should().Be("Test Fişi 4");
+        result.Data.Items[1].Title.Should().Be("Test Fişi 5");
+        result.Data.Items[2].Title.Should().Be("Test Fişi 6");
     }
 }

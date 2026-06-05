@@ -9,14 +9,16 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System;
 
+using AIFinancePlatform.Application.Common.Models;
+
 namespace AIFinancePlatform.Application.CQRS.Queries.Transactions.GetTransactionsPdf;
 
 // 1. Dışarıdan gelecek İSTEK (Query)
 // Geriye byte[] (PDF dosyasının bayt hali) döndürecek.
-public record GetTransactionsPdfQuery(Guid UserId) : IRequest<byte[]>;
+public record GetTransactionsPdfQuery(Guid UserId) : IRequest<Result<byte[]>>;
 
 // 2. İsteği yakalayacak İŞLEYİCİ (Handler)
-public class GetTransactionsPdfQueryHandler : IRequestHandler<GetTransactionsPdfQuery, byte[]>
+public class GetTransactionsPdfQueryHandler : IRequestHandler<GetTransactionsPdfQuery, Result<byte[]>>
 {
     private readonly IApplicationDbContext _context;
 
@@ -27,7 +29,7 @@ public class GetTransactionsPdfQueryHandler : IRequestHandler<GetTransactionsPdf
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
-    public async Task<byte[]> Handle(GetTransactionsPdfQuery request, CancellationToken cancellationToken)
+    public async Task<Result<byte[]>> Handle(GetTransactionsPdfQuery request, CancellationToken cancellationToken)
     {
         // 1. Veritabanından kullanıcının işlemlerini çekiyoruz
         var transactionList = await _context.Transactions
@@ -90,7 +92,6 @@ public class GetTransactionsPdfQueryHandler : IRequestHandler<GetTransactionsPdf
             });
         });
 
-        // 3. Çizdiğimiz PDF'i byte dizisi (dosya formatı) olarak geri döndürüyoruz
-        return pdfDocument.GeneratePdf();
+        return Result<byte[]>.Success(pdfDocument.GeneratePdf());
     }
 }

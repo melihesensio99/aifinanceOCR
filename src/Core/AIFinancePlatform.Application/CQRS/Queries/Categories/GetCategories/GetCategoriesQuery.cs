@@ -8,11 +8,13 @@ using Microsoft.EntityFrameworkCore;
 using AIFinancePlatform.Application.Common.Interfaces.Persistence;
 using AIFinancePlatform.Application.DTOs.Categories;
 
+using AIFinancePlatform.Application.Common.Models;
+
 namespace AIFinancePlatform.Application.CQRS.Queries.Categories.GetCategories;
 
-public record GetCategoriesQuery(Guid UserId) : IRequest<List<CategoryDto>>;
+public record GetCategoriesQuery(Guid UserId) : IRequest<Result<List<CategoryDto>>>;
 
-public class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQuery, List<CategoryDto>>
+public class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQuery, Result<List<CategoryDto>>>
 {
     private readonly IApplicationDbContext _context;
 
@@ -21,9 +23,9 @@ public class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQuery, Lis
         _context = context;
     }
 
-    public async Task<List<CategoryDto>> Handle(GetCategoriesQuery request, CancellationToken cancellationToken)
+    public async Task<Result<List<CategoryDto>>> Handle(GetCategoriesQuery request, CancellationToken cancellationToken)
     {
-        return await _context.Categories
+        var categories = await _context.Categories
             .Where(c => c.IsDefault || c.UserId == request.UserId)
             .OrderBy(c => c.Name)
             .Select(c => new CategoryDto(
@@ -34,5 +36,7 @@ public class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQuery, Lis
                 c.IsDefault
             ))
             .ToListAsync(cancellationToken);
+            
+        return Result<List<CategoryDto>>.Success(categories);
     }
 }

@@ -18,7 +18,7 @@ public class PriceCacheController : ApiControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<string>> Get([FromQuery] string term, [FromHeader(Name = "x-ai-api-key")] string apiKey)
+    public async Task<ActionResult> Get([FromQuery] string term, [FromHeader(Name = "x-ai-api-key")] string apiKey)
     {
         var expectedApiKey = _configuration["AIApiKey"];
         if (apiKey != expectedApiKey)
@@ -27,12 +27,12 @@ public class PriceCacheController : ApiControllerBase
         }
 
         var query = new GetPriceCacheQuery(term);
-        var price = await Mediator.Send(query);
+        var result = await Mediator.Send(query);
         
-        if (string.IsNullOrEmpty(price))
+        if (!result.IsSuccess || string.IsNullOrEmpty(result.Data))
             return NotFound();
             
-        return Ok(new { price });
+        return Ok(new { price = result.Data });
     }
 
     public class CreatePriceCacheRequest
@@ -51,7 +51,7 @@ public class PriceCacheController : ApiControllerBase
         }
 
         var command = new CreatePriceCacheCommand(request.SearchTerm, request.Price);
-        await Mediator.Send(command);
-        return Ok();
+        var result = await Mediator.Send(command);
+        return HandleResult(result);
     }
 }

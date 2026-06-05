@@ -12,7 +12,7 @@ namespace AIFinancePlatform.API.Controllers;
 public class AnalyticsController : ApiControllerBase
 {
     [HttpGet("dashboard")]
-    public async Task<ActionResult<DashboardSummaryDto>> GetDashboardSummary([FromQuery] string period = "AllTime")
+    public async Task<ActionResult> GetDashboardSummary([FromQuery] string period = "AllTime")
     {
         if (!Enum.TryParse<TimePeriod>(period, true, out var timePeriod))
         {
@@ -22,6 +22,6 @@ public class AnalyticsController : ApiControllerBase
         var query = new GetDashboardSummaryQuery(CurrentUserId, timePeriod);
         var result = await Mediator.Send(query);
 
-        return Ok(result);
+        return HandleResult(result);
     }
 }

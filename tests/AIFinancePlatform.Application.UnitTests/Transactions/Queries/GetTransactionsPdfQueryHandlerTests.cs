@@ -46,15 +46,17 @@ public class GetTransactionsPdfQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeOfType<byte[]>();
-        result.Length.Should().BeGreaterThan(0);
+        result.IsSuccess.Should().BeTrue();
+        result.Data.Should().NotBeNull();
+        result.Data.Should().BeOfType<byte[]>();
+        result.Data.Length.Should().BeGreaterThan(0);
         
         // PDF dosyalarının sihirli baytları (Magic Bytes) '%PDF' ile başlar.
         // Bu byte dizisinin 37 80 68 70 olduğuna emin olabiliriz.
-        result[0].Should().Be(0x25); // %
-        result[1].Should().Be(0x50); // P
-        result[2].Should().Be(0x44); // D
-        result[3].Should().Be(0x46); // F
+        result.Data[0].Should().Be(0x25); // %
+        result.Data[1].Should().Be(0x50); // P
+        result.Data[2].Should().Be(0x44); // D
+        result.Data[3].Should().Be(0x46); // F
     }
 
     [Fact]
@@ -74,6 +76,8 @@ public class GetTransactionsPdfQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Length.Should().BeGreaterThan(0); // İçinde kayıt olmasa da boş PDF tablosu çizilir
+        result.IsSuccess.Should().BeTrue();
+        result.Data.Should().NotBeNull();
+        result.Data.Length.Should().BeGreaterThan(0); // İçinde kayıt olmasa da boş PDF tablosu çizilir
     }
 }

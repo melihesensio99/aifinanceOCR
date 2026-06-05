@@ -13,9 +13,9 @@ using AIFinancePlatform.Application.Common.Mappings;
 
 namespace AIFinancePlatform.Application.CQRS.Queries.Transactions.GetTransactions;
 
-public record GetTransactionsQuery(Guid UserId, int PageNumber = 1, int PageSize = 10) : IRequest<PaginatedList<TransactionDto>>;
+public record GetTransactionsQuery(Guid UserId, int PageNumber = 1, int PageSize = 10) : IRequest<Result<PaginatedList<TransactionDto>>>;
 
-public class GetTransactionsQueryHandler : IRequestHandler<GetTransactionsQuery, PaginatedList<TransactionDto>>
+public class GetTransactionsQueryHandler : IRequestHandler<GetTransactionsQuery, Result<PaginatedList<TransactionDto>>>
 {
     private readonly IApplicationDbContext _context;
 
@@ -24,9 +24,9 @@ public class GetTransactionsQueryHandler : IRequestHandler<GetTransactionsQuery,
         _context = context;
     }
 
-    public async Task<PaginatedList<TransactionDto>> Handle(GetTransactionsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PaginatedList<TransactionDto>>> Handle(GetTransactionsQuery request, CancellationToken cancellationToken)
     {
-        return await _context.Transactions
+        var result = await _context.Transactions
             .Where(t => t.UserId == request.UserId)
             .Select(t => new TransactionDto
             {
@@ -46,5 +46,7 @@ public class GetTransactionsQueryHandler : IRequestHandler<GetTransactionsQuery,
             })
             .OrderByDescending(t => t.Date)
             .PaginatedListAsync(request.PageNumber, request.PageSize);
+            
+        return Result<PaginatedList<TransactionDto>>.Success(result);
     }
 }

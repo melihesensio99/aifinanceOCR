@@ -8,11 +8,13 @@ using AIFinancePlatform.Application.Common.Interfaces.Persistence;
 using AIFinancePlatform.Application.DTOs.Analytics;
 using AIFinancePlatform.Domain.Enums;
 
+using AIFinancePlatform.Application.Common.Models;
+
 namespace AIFinancePlatform.Application.CQRS.Queries.Analytics.GetDashboardSummary;
 
-public record GetDashboardSummaryQuery(Guid UserId, TimePeriod Period = TimePeriod.AllTime) : IRequest<DashboardSummaryDto>;
+public record GetDashboardSummaryQuery(Guid UserId, TimePeriod Period = TimePeriod.AllTime) : IRequest<Result<DashboardSummaryDto>>;
 
-public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSummaryQuery, DashboardSummaryDto>
+public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSummaryQuery, Result<DashboardSummaryDto>>
 {
     private readonly IApplicationDbContext _context;
 
@@ -21,7 +23,7 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
         _context = context;
     }
 
-    public async Task<DashboardSummaryDto> Handle(GetDashboardSummaryQuery request, CancellationToken cancellationToken)
+    public async Task<Result<DashboardSummaryDto>> Handle(GetDashboardSummaryQuery request, CancellationToken cancellationToken)
     {
         var query = _context.Transactions
             .Include(t => t.Category)
@@ -74,7 +76,7 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
             .OrderByDescending(c => c.TotalAmount)
             .ToList();
 
-        return new DashboardSummaryDto
+        return Result<DashboardSummaryDto>.Success(new DashboardSummaryDto
         {
             TotalExpense = totalExpense,
             TotalIncome = totalIncome,
@@ -83,6 +85,6 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
             StartDate = startDate,
             EndDate = endDate,
             CategorySummaries = categorySummaries
-        };
+        });
     }
 }

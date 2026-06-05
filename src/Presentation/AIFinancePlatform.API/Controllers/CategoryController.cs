@@ -11,10 +11,10 @@ namespace AIFinancePlatform.API.Controllers;
 public class CategoryController : ApiControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<CategoryDto>>> Get()
+    public async Task<ActionResult> Get()
     {
         var query = new GetCategoriesQuery(CurrentUserId);
         var result = await Mediator.Send(query);
-        return Ok(result);
+        return HandleResult(result);
     }
 }
