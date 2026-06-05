@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using AIFinancePlatform.Application.Common.Interfaces.Persistence;
 using AIFinancePlatform.Application.DTOs.Analytics;
 using AIFinancePlatform.Domain.Enums;
+using AIFinancePlatform.Domain.Entities;
 
 using AIFinancePlatform.Application.Common.Models;
 
@@ -25,27 +27,14 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
 
     public async Task<Result<DashboardSummaryDto>> Handle(GetDashboardSummaryQuery request, CancellationToken cancellationToken)
     {
+        var (startDate, endDate) = GetDateRangeForPeriod(request.Period);
+        
         var query = _context.Transactions
             .Include(t => t.Category)
             .Where(t => t.UserId == request.UserId);
 
-        var now = DateTime.UtcNow;
-        var startDate = DateTime.MinValue;
-        var endDate = now;
-
-        if (request.Period == TimePeriod.Weekly)
+        if (startDate != DateTime.MinValue)
         {
-            startDate = now.AddDays(-7);
-            query = query.Where(t => t.Date >= startDate);
-        }
-        else if (request.Period == TimePeriod.Monthly)
-        {
-            startDate = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-            query = query.Where(t => t.Date >= startDate);
-        }
-        else if (request.Period == TimePeriod.Yearly)
-        {
-            startDate = new DateTime(now.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
             query = query.Where(t => t.Date >= startDate);
         }
 
@@ -54,9 +43,40 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
         var totalExpense = transactions.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);
         var totalIncome = transactions.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount);
         var netBalance = totalIncome - totalExpense;
-        var totalCount = transactions.Count;
 
-        var categorySummaries = transactions
+        var categorySummaries = CalculateCategorySummaries(transactions, totalExpense);
+
+        return Result<DashboardSummaryDto>.Success(new DashboardSummaryDto
+        {
+            TotalExpense = totalExpense,
+            TotalIncome = totalIncome,
+            NetBalance = netBalance,
+            TransactionCount = transactions.Count,
+            StartDate = startDate,
+            EndDate = endDate,
+            CategorySummaries = categorySummaries
+        });
+    }
+
+    private static (DateTime StartDate, DateTime EndDate) GetDateRangeForPeriod(TimePeriod period)
+    {
+        var now = DateTime.UtcNow;
+        var endDate = now;
+        
+        DateTime startDate = period switch
+        {
+            TimePeriod.Weekly => now.AddDays(-7),
+            TimePeriod.Monthly => new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc),
+            TimePeriod.Yearly => new DateTime(now.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            _ => DateTime.MinValue
+        };
+
+        return (startDate, endDate);
+    }
+
+    private static List<CategorySummaryDto> CalculateCategorySummaries(List<Transaction> transactions, decimal totalExpense)
+    {
+        return transactions
             .Where(t => t.Type == TransactionType.Expense)
             .GroupBy(t => t.CategoryId)
             .Select(g =>
@@ -75,16 +95,5 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
             })
             .OrderByDescending(c => c.TotalAmount)
             .ToList();
-
-        return Result<DashboardSummaryDto>.Success(new DashboardSummaryDto
-        {
-            TotalExpense = totalExpense,
-            TotalIncome = totalIncome,
-            NetBalance = netBalance,
-            TransactionCount = totalCount,
-            StartDate = startDate,
-            EndDate = endDate,
-            CategorySummaries = categorySummaries
-        });
     }
 }
