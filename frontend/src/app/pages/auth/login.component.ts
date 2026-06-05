@@ -84,7 +84,14 @@ export class LoginComponent {
       },
       error: (err: any) => {
         this.isLoading = false;
-        this.errorMessage = 'Giriş başarısız. Lütfen bilgilerinizi kontrol edin.';
+        
+        // Backend'den gelen hata mesajını yakala (FluentValidation mesajı veya genel hata)
+        if (err.error && err.error.message) {
+            this.errorMessage = err.error.message;
+        } else {
+            this.errorMessage = 'Giriş başarısız. Lütfen bilgilerinizi kontrol edin.';
+        }
+        
         console.error(err);
       }
     });

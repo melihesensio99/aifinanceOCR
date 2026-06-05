@@ -96,7 +96,14 @@ export class RegisterComponent {
       },
       error: (err: any) => {
         this.isLoading = false;
-        this.errorMessage = 'Kayıt başarısız. Bu e-posta kullanılıyor olabilir veya şifre kurallara uymuyor.';
+        
+        // Backend'den gelen hata mesajını yakala (FluentValidation mesajı veya genel hata)
+        if (err.error && err.error.message) {
+            this.errorMessage = err.error.message;
+        } else {
+            this.errorMessage = 'Kayıt başarısız. Bu e-posta kullanılıyor olabilir veya şifre kurallara uymuyor.';
+        }
+        
         console.error(err);
       }
     });
