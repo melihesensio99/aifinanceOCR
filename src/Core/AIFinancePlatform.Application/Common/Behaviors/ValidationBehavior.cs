@@ -25,33 +25,48 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
         {
             var context = new ValidationContext<TRequest>(request);
 
-            var validationResults = await Task.WhenAll(
-                _validators.Select(v => v.ValidateAsync(context, cancellationToken)));
+            var validators = _validators.Select(v => v.ValidateAsync(context, cancellationToken)).ToList();
+            var validationResults = await Task.WhenAll(validators);
 
             var failures = validationResults
                 .Where(r => r.Errors.Any())
                 .SelectMany(r => r.Errors)
-                .Select(f => f.ErrorMessage)
                 .ToList();
 
             if (failures.Any())
             {
+                var validationErrors = failures
+                    .GroupBy(
+                        e => e.PropertyName,
+                        e => e.ErrorMessage,
+                        (propertyName, errorMessages) => new
+                        {
+                            Key = propertyName,
+                            Values = errorMessages.Distinct().ToArray()
+                        })
+                    .ToDictionary(x => x.Key, x => x.Values);
+
                 if (typeof(TResponse).IsGenericType && typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
                 {
                     var resultType = typeof(TResponse).GetGenericArguments()[0];
-                    var failureMethod = typeof(Result<>)
-                        .MakeGenericType(resultType)
-                        .GetMethod("Failure", new[] { typeof(string), typeof(IReadOnlyCollection<string>) });
+                    var validationResultType = typeof(ValidationResult<>).MakeGenericType(resultType);
+                    
+                    var obj = Activator.CreateInstance(
+                        validationResultType,
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
+                        null,
+                        new object[] { validationErrors },
+                        null);
 
-                    return (TResponse)failureMethod.Invoke(null, new object[] { "Validasyon Hatası", failures });
+                    return (TResponse)obj!;
                 }
                 else if (typeof(TResponse) == typeof(Result))
                 {
-                    return (TResponse)(object)Result.Failure("Validasyon Hatası", failures);
+                    return (TResponse)(object)ValidationResult.WithErrors(validationErrors);
                 }
                 
                 // Eğer TResponse bir Result tipi değilse, eski sistem devam etsin (Güvenlik için)
-                throw new Common.Exceptions.ValidationException(validationResults.SelectMany(r => r.Errors));
+                throw new Common.Exceptions.ValidationException(failures);
             }
         }
 

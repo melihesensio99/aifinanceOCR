@@ -34,6 +34,11 @@ public abstract class ApiControllerBase : ControllerBase
         if (result.IsSuccess && result.Data != null) return Ok(result.Data);
         if (result.IsSuccess && result.Data == null) return NotFound();
         
+        if (result is IValidationResult validationResult)
+        {
+            return BadRequest(new { message = result.ErrorMessage, validationErrors = validationResult.ValidationErrors });
+        }
+        
         return BadRequest(new { message = result.ErrorMessage, errors = result.Errors });
     }
 
@@ -41,6 +46,11 @@ public abstract class ApiControllerBase : ControllerBase
     {
         if (result == null) return NotFound();
         if (result.IsSuccess) return Ok();
+        
+        if (result is IValidationResult validationResult)
+        {
+            return BadRequest(new { message = result.ErrorMessage, validationErrors = validationResult.ValidationErrors });
+        }
         
         return BadRequest(new { message = result.ErrorMessage, errors = result.Errors });
     }
