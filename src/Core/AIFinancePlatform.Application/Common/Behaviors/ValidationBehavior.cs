@@ -16,7 +16,7 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
 
     public ValidationBehavior(IEnumerable<IValidator<TRequest>> validators)
     {
-        _validators = validators;
+        _validators = validators ?? Enumerable.Empty<IValidator<TRequest>>();
     }
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
@@ -25,7 +25,9 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
         {
             var context = new ValidationContext<TRequest>(request);
 
-            var validators = _validators.Select(v => v.ValidateAsync(context, cancellationToken)).ToList();
+            // Not: Select direkt olarak WhenAll'a geçildiğinde state machine'i iki kere tetiklememesi için
+            // eğer tekrar iterate edeceksek ToList() faydalıdır, ancak burada tek seferde consume ediliyor.
+            var validators = _validators.Select(v => v.ValidateAsync(context, cancellationToken));
             var validationResults = await Task.WhenAll(validators);
 
             var failures = validationResults
@@ -42,6 +44,8 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
                         (propertyName, errorMessages) => new
                         {
                             Key = propertyName,
+                            // Not: Burada errorMessages.Distinct() kullanarak property bazlı (lokal) tekilleştirme yapıyoruz. 
+                            // Aynı mesaj farklı property'ler için çıkarsa kaybolmaz.
                             Values = errorMessages.Distinct().ToArray()
                         })
                     .ToDictionary(x => x.Key, x => x.Values);
@@ -49,24 +53,20 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
                 if (typeof(TResponse).IsGenericType && typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
                 {
                     var resultType = typeof(TResponse).GetGenericArguments()[0];
-                    var validationResultType = typeof(ValidationResult<>).MakeGenericType(resultType);
+                    var failureMethod = typeof(Result<>)
+                        .MakeGenericType(resultType)
+                        .GetMethod(nameof(Result<object>.ValidationFailure));
                     
-                    var obj = Activator.CreateInstance(
-                        validationResultType,
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
-                        null,
-                        new object[] { validationErrors },
-                        null);
-
-                    return (TResponse)obj!;
+                    return (TResponse)failureMethod!.Invoke(null, new object[] { validationErrors })!;
                 }
                 else if (typeof(TResponse) == typeof(Result))
                 {
-                    return (TResponse)(object)ValidationResult.WithErrors(validationErrors);
+                    return (TResponse)(object)Result.ValidationFailure(validationErrors);
                 }
                 
-                // Eğer TResponse bir Result tipi değilse, eski sistem devam etsin (Güvenlik için)
-                throw new Common.Exceptions.ValidationException(failures);
+                // Sistemdeki tüm RequestHandler'lar Result dönmek üzere tasarlanmıştır.
+                // Eğer Result dönmeyen bir Handler tanımlanırsa ve hata fırlatırsa, bu bir mimari ihlalidir.
+                throw new InvalidOperationException($"MediatR Pipeline Error: {typeof(TRequest).Name} handler did not return a Result or Result<T> object.");
             }
         }
 

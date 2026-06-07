@@ -23,6 +23,7 @@ public class Result
     public static Result Success() => new Result(true, string.Empty);
     public static Result Failure(string errorMessage) => new Result(false, errorMessage);
     public static Result Failure(string errorMessage, IReadOnlyCollection<string> errors) => new Result(false, errorMessage, errors);
+    public static Result ValidationFailure(IDictionary<string, string[]> errors) => ValidationResult.WithErrors(errors);
 }
 
 public class Result<T> : Result
@@ -38,6 +39,7 @@ public class Result<T> : Result
     public static Result<T> Success(T data) => new Result<T>(true, string.Empty, data);
     public static new Result<T> Failure(string errorMessage) => new Result<T>(false, errorMessage, default);
     public static new Result<T> Failure(string errorMessage, IReadOnlyCollection<string> errors) => new Result<T>(false, errorMessage, default, errors);
+    public static Result<T> ValidationFailure(IDictionary<string, string[]> errors) => ValidationResult<T>.WithErrors(errors);
 }
 
 public sealed class ValidationResult : Result, IValidationResult
