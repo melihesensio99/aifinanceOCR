@@ -321,6 +321,7 @@ export class TransactionsComponent implements OnInit, OnDestroy {
       },
       error: (err: any) => {
         console.error('Harcamalar yüklenemedi:', err);
+        this.syncMessage = err.error?.message || 'Harcamalar yüklenemedi.';
         if (showLoading) this.isLoading = false;
       }
     });
@@ -346,7 +347,7 @@ export class TransactionsComponent implements OnInit, OnDestroy {
       error: (err: any) => {
         console.error('Banka eşitleme hatası:', err);
         this.isSyncing = false;
-        this.syncMessage = 'Eşitleme sırasında bir hata oluştu.';
+        this.syncMessage = err.error?.message || 'Eşitleme sırasında bir hata oluştu.';
       }
     });
   }
@@ -374,7 +375,7 @@ export class TransactionsComponent implements OnInit, OnDestroy {
       error: (err: any) => {
         console.error('PDF indirme hatası:', err);
         this.isDownloadingPdf = false;
-        this.syncMessage = 'PDF indirilirken bir hata oluştu.';
+        this.syncMessage = err.error?.message || 'PDF indirilirken bir hata oluştu.';
         setTimeout(() => this.syncMessage = '', 3000);
       }
     });
@@ -408,7 +409,7 @@ export class TransactionsComponent implements OnInit, OnDestroy {
         error: (err: any) => {
           console.error('Fiş yükleme hatası:', err);
           this.isUploading = false;
-          this.syncMessage = 'Fiş yüklenirken bir hata oluştu.';
+          this.syncMessage = err.error?.message || 'Fiş yüklenirken bir hata oluştu.';
         }
       });
     }
@@ -424,7 +425,7 @@ export class TransactionsComponent implements OnInit, OnDestroy {
         },
         error: (err: any) => {
           console.error('Silme hatası:', err);
-          this.syncMessage = 'Silme işlemi sırasında bir hata oluştu.';
+          this.syncMessage = err.error?.message || 'Silme işlemi sırasında bir hata oluştu.';
         }
       });
     }

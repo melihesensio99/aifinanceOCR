@@ -19,6 +19,11 @@ export interface TransactionDto {
   expanded?: boolean;
 }
 
+export interface UploadReceiptDto {
+  filePath: string;
+  originalFileName: string;
+}
+
 export interface PaginatedList<T> {
   items: T[];
   pageNumber: number;
@@ -45,17 +50,17 @@ export class TransactionService {
     return this.http.get(`${this.apiUrl}/export-pdf`, { responseType: 'blob' });
   }
 
-  syncBank(bankName: string): Observable<any> {
-    return this.http.post(`${this.bankApiUrl}/sync`, { bankName });
+  syncBank(bankName: string): Observable<void> {
+    return this.http.post<void>(`${this.bankApiUrl}/sync`, { bankName });
   }
 
-  uploadReceipt(file: File): Observable<any> {
+  uploadReceipt(file: File): Observable<UploadReceiptDto> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post('https://localhost:7133/api/receipt/upload', formData);
+    return this.http.post<UploadReceiptDto>('https://localhost:7133/api/receipt/upload', formData);
   }
 
-  deleteTransaction(id: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`);
+  deleteTransaction(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }
