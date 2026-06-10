@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AIFinancePlatform.Application.Common.Interfaces;
 
 namespace AIFinancePlatform.Application.Common.Models;
 

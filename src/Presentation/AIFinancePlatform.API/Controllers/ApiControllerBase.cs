@@ -4,6 +4,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using AIFinancePlatform.Application.Common.Models;
+using AIFinancePlatform.Application.Common.Interfaces;
 
 namespace AIFinancePlatform.API.Controllers;
 
