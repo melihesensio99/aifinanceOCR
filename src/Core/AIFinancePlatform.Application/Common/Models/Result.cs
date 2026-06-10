@@ -2,11 +2,6 @@ using System.Collections.Generic;
 
 namespace AIFinancePlatform.Application.Common.Models;
 
-public interface IValidationResult
-{
-    IDictionary<string, string[]> ValidationErrors { get; }
-}
-
 public class Result
 {
     public bool IsSuccess { get; }
@@ -40,30 +35,4 @@ public class Result<T> : Result
     public static new Result<T> Failure(string errorMessage) => new Result<T>(false, errorMessage, default);
     public static new Result<T> Failure(string errorMessage, IReadOnlyCollection<string> errors) => new Result<T>(false, errorMessage, default, errors);
     public static Result<T> ValidationFailure(IDictionary<string, string[]> errors) => ValidationResult<T>.WithErrors(errors);
-}
-
-public sealed class ValidationResult : Result, IValidationResult
-{
-    public IDictionary<string, string[]> ValidationErrors { get; }
-
-    internal ValidationResult(IDictionary<string, string[]> validationErrors) 
-        : base(false, "Validasyon Hatası", null)
-    {
-        ValidationErrors = validationErrors;
-    }
-
-    public static ValidationResult WithErrors(IDictionary<string, string[]> validationErrors) => new(validationErrors);
-}
-
-public sealed class ValidationResult<TValue> : Result<TValue>, IValidationResult
-{
-    public IDictionary<string, string[]> ValidationErrors { get; }
-
-    internal ValidationResult(IDictionary<string, string[]> validationErrors) 
-        : base(false, "Validasyon Hatası", default, null)
-    {
-        ValidationErrors = validationErrors;
-    }
-
-    public static ValidationResult<TValue> WithErrors(IDictionary<string, string[]> validationErrors) => new(validationErrors);
 }
