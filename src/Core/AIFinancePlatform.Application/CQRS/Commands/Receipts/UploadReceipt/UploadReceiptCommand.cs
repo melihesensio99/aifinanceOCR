@@ -7,6 +7,7 @@ using AIFinancePlatform.Application.Common.Interfaces.Events;
 using AIFinancePlatform.Application.Common.Interfaces.Services;
 
 using AIFinancePlatform.Application.Common.Models;
+using AIFinancePlatform.Application.DTOs.Receipts;
 
 namespace AIFinancePlatform.Application.CQRS.Commands.Receipts.UploadReceipt;
 
@@ -14,9 +15,9 @@ public record UploadReceiptCommand(
     Guid UserId,
     Stream FileStream,
     string FileName
-) : IRequest<Result<UploadReceiptCommandResult>>;
+) : IRequest<Result<UploadReceiptDto>>;
 
-public class UploadReceiptCommandHandler : IRequestHandler<UploadReceiptCommand, Result<UploadReceiptCommandResult>>
+public class UploadReceiptCommandHandler : IRequestHandler<UploadReceiptCommand, Result<UploadReceiptDto>>
 {
     private readonly IFileStorageService _fileStorageService;
     private readonly IEventPublisher _eventPublisher;
@@ -29,7 +30,7 @@ public class UploadReceiptCommandHandler : IRequestHandler<UploadReceiptCommand,
         _eventPublisher = eventPublisher;
     }
 
-    public async Task<Result<UploadReceiptCommandResult>> Handle(UploadReceiptCommand request, CancellationToken cancellationToken)
+    public async Task<Result<UploadReceiptDto>> Handle(UploadReceiptCommand request, CancellationToken cancellationToken)
     {
         // 1. Save file to disk via IFileStorageService
         var filePath = await _fileStorageService.SaveFileAsync(request.FileStream, request.FileName);
@@ -43,11 +44,9 @@ public class UploadReceiptCommandHandler : IRequestHandler<UploadReceiptCommand,
 
         await _eventPublisher.PublishAsync(@event, "receipt_queue_v2");
 
-        return Result<UploadReceiptCommandResult>.Success(new UploadReceiptCommandResult(
+        return Result<UploadReceiptDto>.Success(new UploadReceiptDto(
             filePath,
-            request.FileName,
-            true,
-            "Fiş başarıyla yüklendi ve kuyruğa alındı."
+            request.FileName
         ));
     }
 }

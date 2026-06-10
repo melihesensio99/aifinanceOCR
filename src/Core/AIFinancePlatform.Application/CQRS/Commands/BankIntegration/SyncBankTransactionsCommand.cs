@@ -12,9 +12,9 @@ using AIFinancePlatform.Application.Common.Models;
 
 namespace AIFinancePlatform.Application.CQRS.Commands.BankIntegration;
 
-public record SyncBankTransactionsCommand(BankType BankType, Guid UserId) : IRequest<Result<bool>>;
+public record SyncBankTransactionsCommand(BankType BankType, Guid UserId) : IRequest<Result>;
 
-public class SyncBankTransactionsCommandHandler : IRequestHandler<SyncBankTransactionsCommand, Result<bool>>
+public class SyncBankTransactionsCommandHandler : IRequestHandler<SyncBankTransactionsCommand, Result>
 {
     private readonly IBankIntegrationFactory _bankFactory;
     private readonly IApplicationDbContext _context;
@@ -25,7 +25,7 @@ public class SyncBankTransactionsCommandHandler : IRequestHandler<SyncBankTransa
         _context = context;
     }
 
-    public async Task<Result<bool>> Handle(SyncBankTransactionsCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(SyncBankTransactionsCommand request, CancellationToken cancellationToken)
     {
         var service = _bankFactory.CreateService(request.BankType);
         
@@ -58,6 +58,6 @@ public class SyncBankTransactionsCommandHandler : IRequestHandler<SyncBankTransa
         }
 
         await _context.SaveChangesAsync(cancellationToken);
-        return Result<bool>.Success(true);
+        return Result.Success();
     }
 }

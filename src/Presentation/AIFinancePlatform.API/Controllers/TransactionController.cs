@@ -53,14 +53,7 @@ public class TransactionController : ApiControllerBase
             request.ReceiptImageUrl
         );
         var result = await Mediator.Send(command);
-        
-        if (!result.IsSuccess || result.Data == null)
-        {
-            return HandleResult(result);
-        }
-
-        var response = new CreateTransactionResponse(result.Data.Transaction, result.Data.Message);
-        return Ok(response);
+        return HandleResult(result);
     }
 
 
@@ -69,13 +62,6 @@ public class TransactionController : ApiControllerBase
     {
         var command = new DeleteTransactionCommand(id, CurrentUserId);
         var result = await Mediator.Send(command);
-        
-        if (!result.IsSuccess || result.Data == null)
-        {
-            return HandleResult(result);
-        }
-
-        var response = new DeleteTransactionResponse(result.Data.DeletedId, result.Data.Message);
-        return Ok(response);
+        return HandleResult(result);
     }
 }

@@ -9,9 +9,9 @@ using AIFinancePlatform.Application.Common.Models;
 
 namespace AIFinancePlatform.Application.CQRS.Commands.Transactions.DeleteTransaction;
 
-public record DeleteTransactionCommand(Guid TransactionId, Guid UserId) : IRequest<Result<DeleteTransactionCommandResult>>;
+public record DeleteTransactionCommand(Guid TransactionId, Guid UserId) : IRequest<Result<Guid>>;
 
-public class DeleteTransactionCommandHandler : IRequestHandler<DeleteTransactionCommand, Result<DeleteTransactionCommandResult>>
+public class DeleteTransactionCommandHandler : IRequestHandler<DeleteTransactionCommand, Result<Guid>>
 {
     private readonly IApplicationDbContext _context;
 
@@ -20,19 +20,19 @@ public class DeleteTransactionCommandHandler : IRequestHandler<DeleteTransaction
         _context = context;
     }
 
-    public async Task<Result<DeleteTransactionCommandResult>> Handle(DeleteTransactionCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Handle(DeleteTransactionCommand request, CancellationToken cancellationToken)
     {
         var transaction = await _context.Transactions
             .FirstOrDefaultAsync(t => t.Id == request.TransactionId && t.UserId == request.UserId, cancellationToken);
 
         if (transaction == null)
         {
-            return Result<DeleteTransactionCommandResult>.Failure("İşlem bulunamadı veya bu işlemi silme yetkiniz yok.");
+            return Result<Guid>.Failure("İşlem bulunamadı veya bu işlemi silme yetkiniz yok.");
         }
 
         _context.Transactions.Remove(transaction);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return Result<DeleteTransactionCommandResult>.Success(new DeleteTransactionCommandResult(request.TransactionId, true, "İşlem başarıyla silindi."));
+        return Result<Guid>.Success(request.TransactionId);
     }
 }

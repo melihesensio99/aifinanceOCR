@@ -23,9 +23,9 @@ public record CreateTransactionCommand(
     bool IsAutomatic,
     string? Source,
     string? ReceiptImageUrl
-) : IRequest<Result<CreateTransactionCommandResult>>;
+) : IRequest<Result<TransactionDto>>;
 
-public class CreateTransactionCommandHandler : IRequestHandler<CreateTransactionCommand, Result<CreateTransactionCommandResult>>
+public class CreateTransactionCommandHandler : IRequestHandler<CreateTransactionCommand, Result<TransactionDto>>
 {
     private readonly IApplicationDbContext _context;
 
@@ -34,11 +34,11 @@ public class CreateTransactionCommandHandler : IRequestHandler<CreateTransaction
         _context = context;
     }
 
-    public async Task<Result<CreateTransactionCommandResult>> Handle(CreateTransactionCommand request, CancellationToken cancellationToken)
+    public async Task<Result<TransactionDto>> Handle(CreateTransactionCommand request, CancellationToken cancellationToken)
     {
         if (!Enum.TryParse<TransactionType>(request.Type, out var transactionType))
         {
-            return Result<CreateTransactionCommandResult>.Failure("Geçersiz işlem tipi. 'Income' veya 'Expense' olmalıdır.");
+            return Result<TransactionDto>.Failure("Geçersiz işlem tipi. 'Income' veya 'Expense' olmalıdır.");
         }
 
         var category = await _context.Categories
@@ -46,7 +46,7 @@ public class CreateTransactionCommandHandler : IRequestHandler<CreateTransaction
 
         if (category == null)
         {
-            return Result<CreateTransactionCommandResult>.Failure("Kategori bulunamadı.");
+            return Result<TransactionDto>.Failure("Kategori bulunamadı.");
         }
 
         var transaction = new Transaction
@@ -83,6 +83,6 @@ public class CreateTransactionCommandHandler : IRequestHandler<CreateTransaction
             Source = transaction.Source
         };
 
-        return Result<CreateTransactionCommandResult>.Success(new CreateTransactionCommandResult(transactionDto, true, "Harcama başarıyla oluşturuldu."));
+        return Result<TransactionDto>.Success(transactionDto);
     }
 }

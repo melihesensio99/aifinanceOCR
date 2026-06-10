@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc;
 using AIFinancePlatform.Application.CQRS.Commands.Receipts.UploadReceipt;
-using AIFinancePlatform.API.Models.Receipts;
 
 namespace AIFinancePlatform.API.Controllers;
 
@@ -35,7 +34,6 @@ public class ReceiptController : ApiControllerBase
             return HandleResult(result);
         }
 
-        var response = new UploadReceiptResponse(result.Data.Message, result.Data.OriginalFileName);
-        return Accepted(response);
+        return Accepted(result.Data);
     }
 }

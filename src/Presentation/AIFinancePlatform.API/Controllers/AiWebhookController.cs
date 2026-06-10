@@ -43,13 +43,7 @@ public class AiWebhookController : ApiControllerBase
         );
         var result = await Mediator.Send(command);
         
-        if (!result.IsSuccess || result.Data == null)
-        {
-            return HandleResult(result);
-        }
-
-        var response = new CreateTransactionResponse(result.Data.Transaction, result.Data.Message);
-        return Ok(response);
+        return HandleResult(result);
     }
 
     [HttpPut("transactions/{id}/append-description")]
