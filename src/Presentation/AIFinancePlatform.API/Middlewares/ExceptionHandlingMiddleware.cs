@@ -33,9 +33,18 @@ public class ExceptionHandlingMiddleware
     private static Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
-        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        
+        // 1. DÜZELTME: Bütün patlamalar (Exceptions) 500 İç Sunucu Hatasıdır.
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
-        var result = JsonSerializer.Serialize(new { message = exception.Message });
+        // 2. DÜZELTME: Siber güvenlik için exception.Message sokağa ASLA açılmaz.
+        var result = JsonSerializer.Serialize(new 
+        { 
+            isSuccess = false,
+            message = "Sistemde beklenmeyen teknik bir hata oluştu. Lütfen daha sonra tekrar deneyiniz."
+            // exception.Message'ı burada siliyoruz ki veritabanı yolları veya şifreler dışarı sızmasın!
+        });
+        
         return context.Response.WriteAsync(result);
     }
 }
